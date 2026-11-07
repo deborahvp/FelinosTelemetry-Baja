@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to track.json (not versioned). image: path relative to this file. bounds: [[south_lat, west_lon], [north_lat, east_lon]] of the image corners, in decimal degrees.",
+  "image": "track.jpg",
+  "bounds": [[21.1468, -101.7104], [21.1488, -101.7078]]
+}

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Felinos Telemetry</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo"><div class="logo-mark">F</div><div>FELINOS RACING<small data-i18n="brandSub">TELEMETRY · BAJA SAE</small></div></div>
+  <div class="seg" role="tablist">
+    <button class="on" role="tab" aria-selected="true" data-i18n="live">Live</button>
+    <button role="tab" aria-selected="false" disabled data-i18n="replay" data-i18n-title="replaySoon">Replay</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="meta" id="runMeta" data-i18n-title="editRun">
+    <span data-i18n="run">Run</span> <b><span id="mRun">R01</span> · <span id="mTest">Acceleration</span></b> · <span id="mConfig">susp-A · cvt-1</span><br>
+    <span data-i18n="session">Session</span> <span id="mSession">—</span>
+  </button>
+  <div class="pill warn" id="pill"><i></i><span id="pillText">Connecting</span></div>
+  <div class="seg lang" data-i18n-aria="language" role="group">
+    <button data-lang="en" class="on">EN</button><button data-lang="es">ES</button>
+  </div>
+  <button class="theme-btn" id="themeBtn" data-i18n="theme">Light / Dark</button>
+</header>
+
+<div class="banner" id="banner" hidden></div>
+
+<main>
+  <section class="kpis">
+    <div class="card kpi hero"><div class="label" data-i18n="speed">Speed</div><div class="value num"><span id="kSpeed">—</span><small>km/h</small></div><div class="hint"><span data-i18n="runMax">Run max</span> <span id="kSpeedMax" class="num">—</span> km/h</div></div>
+    <div class="card kpi"><div class="label" data-i18n="longG">Longitudinal g</div><div class="value num"><span id="kLong">—</span><small>g</small></div><div class="hint"><span data-i18n="max">Max</span> <span id="kLongMax" class="num">—</span> g</div></div>
+    <div class="card kpi"><div class="label" data-i18n="latG">Lateral g</div><div class="value num"><span id="kLat">—</span><small>g</small></div><div class="hint"><span data-i18n="max">Max</span> <span id="kLatMax" class="num">—</span> g</div></div>
+    <div class="card kpi"><div class="label" data-i18n="gpsAcc">GPS accuracy</div><div class="value num"><span id="kAcc">—</span><small>m</small></div><div class="status" id="kAccStatus">● <span>—</span></div></div>
+    <div class="card kpi"><div class="label" data-i18n="battery">Battery</div><div class="value num"><span id="kBat">—</span><small>%</small></div><div class="hint" id="kBatHint">—</div></div>
+    <div class="card kpi"><div class="label" data-i18n="lastMsg">Last message</div><div class="value num"><span id="kAge">—</span><small>s</small></div><div class="status" id="kGaps">● <span>—</span></div><div class="hint num" id="kLatency"></div></div>
+    <div class="card kpi"><div class="label" data-i18n="time">Time</div><div class="value num" id="kTime">00:00</div><div class="hint" id="kRec">Waiting</div></div>
+  </section>
+
+  <section class="main2">
+    <div class="stack">
+      <div class="card">
+        <div class="chead"><div><h3 class="big" data-i18n="speed">Speed</h3><div class="sub" data-i18n-title="zoomHint">GPS · km/h · <span data-i18n="last60">last 60 s</span></div></div><div class="now num"><span id="nSpeed">—</span><small>km/h</small></div></div>
+        <div class="chart" id="cSpeed"></div>
+      </div>
+      <div class="card">
+        <div class="chead"><div><h3 class="big" data-i18n="accel">Acceleration</h3>
+          <div class="legend big"><span><i style="background:var(--series-1)"></i><span data-i18n="longitudinal">Longitudinal</span> <span id="nLong" class="num">—</span> g</span><span><i style="background:var(--series-2)"></i><span data-i18n="lateral">Lateral</span> <span id="nLat" class="num">—</span> g</span></div></div></div>
+        <div class="chart" id="cAccel"></div>
+      </div>
+      <div class="card">
+        <div class="chead"><div><h3 class="big" data-i18n="yawGrade">Yaw and grade</h3>
+          <div class="legend big"><span><i style="background:var(--series-1)"></i><span data-i18n="yawRate">Yaw rate</span> <span id="nYaw" class="num">—</span> °/s</span><span><i style="background:var(--series-2)"></i><span data-i18n="grade">Grade</span> <span id="nGrade" class="num">—</span>°</span></div></div>
+          <button class="small-btn" id="levelBtn" data-i18n="setLevel" data-i18n-title="setLevelHint">Set level</button></div>
+        <div class="chart" id="cYaw"></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3 data-i18n="map">Run map</h3>
+        <div class="sub" id="mapSub" data-i18n="mapSub">Preloaded track image (offline) · trace colored by speed</div>
+        <div class="map-wrap">
+          <div id="map" role="img" aria-label="Track map"></div>
+          <div class="map-legend"><span class="ramp"></span><span class="num" id="mapRange">0 → 50 km/h</span></div>
+          <div class="map-coords num" id="mapCoords" hidden></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 data-i18n="gg">G-G diagram</h3>
+        <div class="sub" data-i18n="ggSub">Lateral vs longitudinal acceleration · last 60 s</div>
+        <svg id="gg" viewBox="0 0 340 340" role="img" aria-label="G-G diagram"></svg>
+      </div>
+      <div class="card">
+        <h3 data-i18n="goals">Vehicle goals</h3>
+        <div class="sub" data-i18n="goalsSub">This session's results against the requirements</div>
+        <div class="req">
+          <div class="req-item"><span class="req-id">VG-04</span><div class="req-name"><span class="nm" data-i18n="r04">Acceleration 100 ft</span><span class="tg"><span data-i18n="target">Target</span> ≤ 4.3 s · 3 <span data-i18n="runs">runs</span></span></div><div class="req-val" data-i18n="noData">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-05</span><div class="req-name"><span class="nm" data-i18n="r05">Turning radius</span><span class="tg"><span data-i18n="target">Target</span> 6 ft @ ~5 mph</span></div><div class="req-val" data-i18n="noData">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-06</span><div class="req-name"><span class="nm" data-i18n="r06">Hill climb 150 ft at 30°</span><span class="tg"><span data-i18n="target">Target</span> &lt; 20 s</span></div><div class="req-val" data-i18n="noData">No data</div></div>
+        </div>
+        <div class="events">
+          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="impacts">Impacts &gt; 2 g</div></div>
+          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="jumps">Jumps</div></div>
+          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="hardBrakes">Hard braking</div></div>
+        </div>
+        <div class="foot" data-i18n="analysisSoon">Automatic analysis arrives in v0.2</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="runDialog">
+  <form method="dialog" id="runForm">
+    <h2 data-i18n="runDetails">Run details</h2>
+    <div class="row">
+      <label><span data-i18n="runId">Run ID</span><input name="run" pattern="R\d{2,}" required></label>
+      <label><span data-i18n="testType">Test type</span>
+        <select name="test">
+          <option value="acceleration" data-i18n="t_acceleration">Acceleration</option>
+          <option value="turning" data-i18n="t_turning">Turning</option>
+          <option value="climb" data-i18n="t_climb">Hill climb</option>
+          <option value="obstacles" data-i18n="t_obstacles">Obstacles</option>
+          <option value="endurance" data-i18n="t_endurance">Endurance</option>
+          <option value="free" data-i18n="t_free">Free</option>
+        </select></label>
+    </div>
+    <div class="row">
+      <label><span data-i18n="suspension">Suspension</span><input name="suspension"></label>
+      <label><span data-i18n="cvt">CVT</span><input name="cvt"></label>
+    </div>
+    <label><span data-i18n="place">Place</span><input name="place"></label>
+    <menu>
+      <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
+      <button value="save" class="primary" data-i18n="save">Save</button>
+    </menu>
+  </form>
+</dialog>
+</body>
+</html>
