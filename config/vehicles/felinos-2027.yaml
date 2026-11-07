@@ -1,0 +1,10 @@
+# Felinos 2027 prototype. SI units. null = not measured yet.
+vehicle_id: felinos-2027
+name: Felinos 2027
+mass_kg: null          # target 170 kg in running order (VG-03)
+track_width_m: null    # needed for inner-tire turning radius (VG-05) — pending
+wheelbase_m: null
+device:
+  model: Galaxy Note 10
+  mounting: "chassis tube next to the seat, screen facing out"
+  axis_map: {x: lateral, y: longitudinal, z: vertical}

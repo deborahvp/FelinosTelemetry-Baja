@@ -1,0 +1,23 @@
+# Run metadata — copy into each run folder as meta.yaml and fill in on site.
+# Validated by felinos_telemetry.models.RunMeta.
+schema_version: 1
+vehicle_id: felinos-2027          # or thundercat
+date: 2026-11-08
+session_id: 2026-11-08_lasalle-bajio
+run_id: R01
+sensorlogger_session_id: null     # filled in on import
+test_type: acceleration           # acceleration | turning | climb | obstacles | endurance | free
+requirement_ids: [VG-04]
+driver: ""
+configuration:
+  suspension: susp-A
+  cvt: cvt-1
+  tire_pressure_psi: {front: 0, rear: 0}
+  ballast_kg: 0
+track: "La Salle Bajío — engineering entrance parking lot"
+weather: {temp_c: null, surface: dry}  # dry | wet | mud | sand
+device:
+  model: Galaxy Note 10
+  mounting: "chassis tube next to the seat, screen facing out"
+  axis_map: {x: lateral, y: longitudinal, z: vertical}   # signed, e.g. "-lateral"
+notes: ""

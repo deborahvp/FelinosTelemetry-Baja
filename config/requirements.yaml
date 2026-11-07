@@ -1,0 +1,19 @@
+# Vehicle goals → measurable requirements → test method (DVP&R).
+- id: VG-04
+  title: Acceleration 100 ft
+  metric: time_100ft_s
+  criterion: {op: "<=", value: 4.3}
+  method: acceleration
+  min_runs: 3
+- id: VG-05
+  title: Turning radius at ~5 mph (inner tire line)
+  metric: turning_radius_inner_ft
+  criterion: {op: "<=", value: 6.0}
+  method: turning
+  min_runs: 3
+- id: VG-06
+  title: Hill climb 150 ft at 30° from standstill
+  metric: climb_time_150ft_s
+  criterion: {op: "<", value: 20.0}
+  method: climb
+  min_runs: 3
