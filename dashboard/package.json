@@ -1,0 +1,5 @@
+{
+  "//": "Marks dashboard/*.js as ES modules for node --check / node --test. No build step, no dependencies.",
+  "type": "module",
+  "private": true
+}

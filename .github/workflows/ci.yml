@@ -34,3 +34,15 @@ jobs:
         run: mypy
       - name: Tests
         run: pytest --cov --cov-report=term-missing --cov-report=xml
+
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: for f in dashboard/*.js; do node --check "$f"; done
+      - name: Unit tests (state, vehicle frame, i18n)
+        run: node --test "tests/dashboard/*.test.mjs"
