@@ -44,7 +44,7 @@ dev = [
 felinos = "felinos_telemetry.cli:app"
 
 [project.urls]
-Repository = "https://github.com/felinos-racing/felinos-telemetry"
+Repository = "https://github.com/deborahvp/FelinosTelemetry-Baja"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/felinos_telemetry"]

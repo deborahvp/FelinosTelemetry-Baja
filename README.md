@@ -1,11 +1,13 @@
 # felinos-telemetry
 
-[![CI](https://github.com/felinos-racing/felinos-telemetry/actions/workflows/ci.yml/badge.svg)](https://github.com/felinos-racing/felinos-telemetry/actions/workflows/ci.yml)
+[![CI](https://github.com/deborahvp/FelinosTelemetry-Baja/actions/workflows/ci.yml/badge.svg)](https://github.com/deborahvp/FelinosTelemetry-Baja/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **End-to-end vehicle data acquisition and verification pipeline for a Baja SAE off-road prototype: live telemetry, automated test analysis and requirements traceability (DVP&R).**
 
 Built by **Felinos Racing** (Universidad La Salle Bajío) for Baja SAE México 2026.
+
+![Live dashboard (dark theme) replaying 60 s of a real test recording](docs/img/dashboard.png)
 
 ## What it does
 
