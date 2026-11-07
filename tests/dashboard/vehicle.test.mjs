@@ -65,6 +65,18 @@ test('portrait phone on a vertical tube (real export orientation)', () => {
   close(frame.f[0] * frame.u[0] + frame.f[1] * frame.u[1] + frame.f[2] * frame.u[2], 0, 1e-12);
 });
 
+test('field guide mounts: portrait on a tube, screen facing out', () => {
+  // Right side: phone y = up, z = out of screen = vehicle right ⇒ x = y × z = forward.
+  const right = frameFromGravity([0, G0, 0], parseAxisMap({ x: 'longitudinal', y: 'vertical', z: 'lateral' }));
+  const vr = toVehicle([2, 0, 0], right);
+  close(vr.long, 2);
+  close(toVehicle([0, 0, 1], right).lat, -1); // screen normal points right ⇒ ISO lateral (left) −
+  // Left side: z = vehicle left ⇒ x = y × z = rearward.
+  const left = frameFromGravity([0, G0, 0], parseAxisMap({ x: '-longitudinal', y: 'vertical', z: 'lateral' }));
+  close(toVehicle([-2, 0, 0], left).long, 2);
+  close(toVehicle([0, 0, 1], left).lat, 1);
+});
+
 test('frameFromGravity returns null for degenerate input', () => {
   const axes = parseAxisMap(DEFAULT);
   assert.equal(frameFromGravity([0, 0, 0], axes), null);
