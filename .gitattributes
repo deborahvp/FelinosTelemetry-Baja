@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# Real device fixtures must stay byte-identical
+tests/fixtures/** -text

@@ -1,0 +1,2 @@
+version,device name,recording epoch time,recording time,recording timezone,platform,appVersion,device id,sensors,sampleRateMs,standardisation,platform version
+3,SM-N975F,1793420456445,2026-10-31_04-20-56,America/Mexico_City,android,1.68,5d3ae9dd-c488-4640-9538-fea83f2c35bd,Accelerometer|Gravity|Gyroscope|Orientation|Compass|Barometer|Location|Annotation|TotalAcceleration|GyroscopeUncalibrated|AccelerometerUncalibrated,10|10|10|10|10|0|0||10|10|10,false,31
