@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Data and secrets (never commit)
+data/
+*.ndjson
+!tests/fixtures/**/*.ndjson
+.env
+dashboard/config.js
+dashboard/assets/track.json
+dashboard/assets/*.jpg
+dashboard/assets/*.png
+
+# Raw test material (full exports stay local; trimmed copies live in tests/fixtures/)
+tests/raw/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
