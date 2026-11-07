@@ -197,6 +197,22 @@ def build_client(settings: MqttSettings, handler: IngestHandler) -> mqtt.Client:
     return client
 
 
+def connect_publisher(settings: MqttSettings, timeout: float = 15.0) -> mqtt.Client:
+    """Connected client for publishing (used by ``felinos simulate --publish``)."""
+    client = build_client(settings, IngestHandler([]))
+    client.on_connect = None
+    client.on_message = None
+    client.connect(settings.host, settings.port, keepalive=30)
+    client.loop_start()
+    deadline = time.monotonic() + timeout
+    while not client.is_connected():
+        if time.monotonic() > deadline:
+            client.loop_stop()
+            raise ConnectionError(f"could not connect to {settings.host}:{settings.port}")
+        time.sleep(0.05)
+    return client
+
+
 def run(
     settings: MqttSettings,
     sinks: Sequence[Sink],
