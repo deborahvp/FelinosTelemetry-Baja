@@ -44,9 +44,27 @@ Dashboard:
 
 ```bash
 cp dashboard/config.example.js dashboard/config.js   # fill in read-only MQTT user
-python -m http.server 8000 --directory dashboard
-# open http://localhost:8000  (add ?lang=es for Spanish)
+felinos dashboard                                    # serves dashboard/ and opens the browser
+# English by default; EN | ES selector in the top bar (or ?lang=es)
 ```
+
+Rehearse without the car:
+
+```bash
+felinos simulate tests/fixtures/sample_export --publish            # replay 60 s of real data to the broker
+felinos simulate tests/fixtures/sample_export --out dashboard/assets/demo.ndjson
+# then open http://localhost:8000/?demo=assets/demo.ndjson         # no broker needed
+```
+
+Check a recording after each run:
+
+```bash
+felinos check path/to/sensorlogger.zip      # sensors, sample rate, duration
+```
+
+Field guides for the team (Spanish, printable): [field guide](docs/field-guide.es.md) ·
+[Sensor Logger + HiveMQ setup](docs/sensorlogger-setup.es.md). Data dictionary:
+[docs/data-format.md](docs/data-format.md).
 
 Parse a Sensor Logger export in Python:
 
@@ -61,6 +79,7 @@ accel = pivot_sensor(long_df, "accelerometer")  # columns: time_ns, x, y, z
 
 ```bash
 ruff check . && ruff format --check . && mypy && pytest
+node --test "tests/dashboard/*.test.mjs"     # dashboard logic (Node ≥ 22)
 pre-commit install
 ```
 
@@ -74,7 +93,8 @@ Conventions: Conventional Commits, SemVer tags, [Keep a Changelog](CHANGELOG.md)
 
 ## Engineering decisions
 
-Architecture Decision Records live in [docs/adr/](docs/adr/).
+- [ADR 0001 — MQTT over WebSocket/TLS through a managed broker](docs/adr/0001-mqtt.md)
+- [ADR 0002 — The phone's local recording is the source of truth](docs/adr/0002-local-recording-source-of-truth.md)
 
 ## License
 
