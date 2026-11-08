@@ -64,6 +64,18 @@ Check a recording after each run:
 felinos check path/to/sensorlogger.zip      # sensors, sample rate, duration
 ```
 
+Analyze runs (official results from the phone's recording):
+
+```bash
+felinos analyze data/2026-11-08/R01_acceleration_susp-A_cvt-1   # results/summary.json, events.csv, report.md
+felinos usage data --csv data/usage.csv                          # accumulated hours, km, impacts (VG-02)
+```
+
+Each report covers data quality, usage (active time from GPS, IMU vibration where GPS is missing),
+events (impacts, jumps, hard braking/cornering), the vehicle goals verified by the run's test type
+(VG-04 time to 100 ft, VG-05 turning radius, VG-06 hill climb) and durability (ASTM E1049 rainflow,
+pseudo-damage, equivalent hours). See [docs/durability-hours.es.md](docs/durability-hours.es.md).
+
 Hosted dashboard: `dashboard/` deploys as-is to any static host (Vercel: Root Directory
 `dashboard`, no build). It ships no credentials — each browser enters the read-only broker user
 once in the **Connection** dialog. See [docs/deploy-vercel.es.md](docs/deploy-vercel.es.md).
@@ -94,7 +106,7 @@ Conventions: Conventional Commits, SemVer tags, [Keep a Changelog](CHANGELOG.md)
 ## Roadmap
 
 - **v0.1.0** — repo skeleton, run metadata models, Sensor Logger parser (stream + CSV), MQTT → NDJSON ingest, live dashboard, field guides.
-- **v0.2.0** — data quality, axis alignment, resampling; analysis for VG-04/05/06, events and rainflow; per-run reports and DVP&R table; dashboard Replay; PSD export for random vibration.
+- **v0.2.0** *(in progress)* — ✅ data quality, axis alignment, usage, events, VG-04/05/06, rainflow and equivalent hours, per-run reports, live goals panel · ⏳ resampling, Kasa circle-fit cross-check, figures, DVP&R table, dashboard Replay, PSD export for random vibration.
 - **v0.3.0+** — PostgreSQL sink and run importer, team web platform, telemetry PCB integration (LoRa → MQTT).
 
 ## Engineering decisions

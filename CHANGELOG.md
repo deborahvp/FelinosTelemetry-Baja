@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (v0.2 analysis)
+
+- `felinos analyze <run_dir>`: official per-run analysis of the phone's recording → `results/`
+  with `summary.json`, `events.csv` and `report.md` (data quality, usage, events, vehicle goals
+  judged against `config/requirements.yaml`, durability).
+- `processing/frames.py` (phone → ISO 8855 vehicle axes, quietest-window level reference,
+  Android/iOS conventions), `processing/gps.py`, `processing/quality.py` (rates, gaps, clipping).
+- `analysis/stream.py`: the same algorithms as the live dashboard, run over the full recording.
+- `analysis/fatigue.py`: ASTM E1049 rainflow (validated against the standard's example and the
+  `rainflow` package), pseudo-damage for m = 3 and 5, equivalent hours from a reference rate.
+- `felinos usage <data_dir>`: accumulated active hours, km, impacts and equivalent hours (VG-02).
+- Active time falls back to IMU vibration (1 s RMS > 0.1 g) where GPS is missing, reported
+  separately; in the real test recording GPS covered 22 s of ~9 active minutes.
+- `docs/durability-hours.es.md`: how accumulated hours are measured and why four measures.
+
 ### Changed
 
 - Dashboard libraries (MQTT.js 5.10.1, uPlot 1.6.31, Leaflet 1.9.4) are vendored in

@@ -85,11 +85,13 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
    ```
 
 3. Revisión rápida: `felinos check data/2026-11-08/R01_acceleration_susp-A_cvt-1/sensorlogger.zip`
+   y análisis oficial: `felinos analyze data/2026-11-08/R01_acceleration_susp-A_cvt-1` (genera `results/report.md`).
    → todos los sensores con frecuencia esperada (≈ 100 Hz IMU, ≈ 1 Hz GPS) y duración correcta.
 4. ⚠ **Nunca abrir y guardar los CSV con Excel**: redondea la columna `time` a `1.79342E+18` y se pierde la precisión. Si alguien lo hizo, el parser intenta recuperarla, pero es mejor no arriesgar.
 
 ## 6. Al final del día
 
+- [ ] `felinos usage data` → horas activas acumuladas, km e impactos (avance de VG-02).
 - [ ] Copiar toda la carpeta `data/` a **dos lugares** (USB + nube del equipo).
 - [ ] Anotar consumo de datos del chip y batería usada por hora.
 - [ ] Anotar pendientes de la sección 4 de `sensorlogger-setup.es.md`.
