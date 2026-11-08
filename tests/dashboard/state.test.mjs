@@ -144,6 +144,25 @@ test('setAxisMap changes the mounting live and re-levels', () => {
   assert.throws(() => store.setAxisMap({ x: 'lateral', y: 'lateral', z: 'vertical' }), /twice/);
 });
 
+test('session feeds the live analyzer: free fall is a jump on both platforms', () => {
+  for (const ios of [false, true]) {
+    const s = new Session('S');
+    const g = ios ? -1 : G0; // iOS: gravity down, in g
+    const payload = [];
+    for (let i = 0; i < 300; i += 1) {
+      const time = 1e18 + i * 1e7;
+      const air = i >= 150 && i < 200; // 0.5 s of free fall
+      // linear acceleration during free fall = 1 g downward (Android sign); iOS reports the opposite
+      const az = air ? (ios ? 1 : -G0) : 0;
+      payload.push({ name: 'gravity', time, values: { x: 0, y: 0, z: g } });
+      payload.push({ name: 'accelerometer', time, values: { x: 0, y: 0, z: az } });
+    }
+    s.ingest({ messageId: 1, payload }, 0);
+    assert.equal(s.analysis.counts.jump, 1, ios ? 'iOS' : 'Android');
+    close(s.analysis.events.find((e) => e.type === 'jump').airtime, 0.5, 0.02);
+  }
+});
+
 test('relevel discards the frame and rebuilds it', () => {
   const s = new Session('S');
   s.ingest(synth({ seconds: 1 }), 0);

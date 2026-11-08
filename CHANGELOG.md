@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection dialog (click the connection status): broker URL and read-only user saved per
   browser, overriding `config.js`, so the dashboard can be hosted (e.g. Vercel) with no
   credentials in its files. `dashboard/vercel.json` and a Spanish deploy guide.
+- Live analysis in the dashboard: active time, distance, impacts (severity bins), jumps,
+  hard braking and cornering at the full IMU rate; standing-start launches (time to 100 ft and
+  150 ft) and steady turns (R = v/omega). The goals panel now shows today's VG-04/05/06 results
+  (best per run, mean over runs, n/3 runs, pass/fail), event counts, active time and the VG-02
+  progress toward 80 active hours; the run log stores and exports them per run.
 - Mount dialog: pick how the phone is mounted (5 presets + invert forward) from any browser,
   applied live with automatic re-leveling, so a last-minute change needs no computer.
 

@@ -6,6 +6,7 @@ import { pickLanguage, translate } from './i18n.js';
 import { TrackMap } from './map.js';
 import { connectLive, isBrokerUrl, resolveConnection } from './mqtt.js';
 import { parseNdjson, play } from './replay.js';
+import { REQUIREMENTS, runValue, summarizeGoals } from './goals.js';
 import { RunLog, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
 import { Store } from './state.js';
 import { matchPreset, parseAxisMap, presetAxisMap } from './vehicle.js';
@@ -20,6 +21,7 @@ const DEFAULTS = {
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,
   placeName: 'León, Gto.',
+  trackWidthM: null, // vehicle track (m) for the inner-tire turning radius (VG-05); null = CG radius only
 };
 
 // ---- small helpers -------------------------------------------------------------------
@@ -96,6 +98,8 @@ let runLogDirty = true;
 store.onChange((session, isNew) => {
   if (isNew) {
     map.reset();
+    const prev = store.previous;
+    if (prev) runLog.updateStats(prev.id, { analysis: prev.analysis.snapshot() }); // final numbers of the run that ended
     // A new recording in Sensor Logger = a new run in the log.
     const started = runLog.startSession(session.id, run, {
       deviceId: session.deviceId,
@@ -165,8 +169,47 @@ function renderData() {
     $('mapCoords').textContent = `${Math.abs(lat).toFixed(4)}° ${t(lat >= 0 ? 'dirN' : 'dirS')}, ${Math.abs(lon).toFixed(4)}° ${t(lon >= 0 ? 'dirE' : 'dirW')}`;
   }
 
-  runLog.updateStats(s.id, { lastSampleAt: s.tLast * 1000, maxSpeed: s.max.speed, maxAlong: s.max.along, maxAlat: s.max.alat, deviceId: s.deviceId });
+  runLog.updateStats(s.id, {
+    lastSampleAt: s.tLast * 1000, maxSpeed: s.max.speed, maxAlong: s.max.along, maxAlat: s.max.alat,
+    deviceId: s.deviceId, analysis: s.analysis.snapshot(),
+  });
   runLogDirty = true;
+}
+
+/** Result shown in the run log for the run's own test type (live estimate). */
+function runResult(e) {
+  const req = REQUIREMENTS.find((r) => r.test === e.test);
+  if (!req) return '—';
+  const v = runValue(req, e, { trackWidthM: cfg.trackWidthM });
+  return v === null ? '—' : `${fmtNum(v, 2)} ${req.unit}`;
+}
+
+function renderGoals() {
+  const g = summarizeGoals(runLog.entries, { today: localDate(Date.now()), trackWidthM: cfg.trackWidthM });
+  const ids = { 'VG-04': '04', 'VG-05': '05', 'VG-06': '06' };
+  for (const r of g.requirements) {
+    const id = ids[r.id];
+    const val = $(`gVal${id}`);
+    $(`gRuns${id}`).textContent = t('nRuns', { n: r.n, m: r.minRuns });
+    if (r.status === 'noData') {
+      val.className = 'req-val num';
+      val.textContent = t('noData');
+      val.title = '';
+      continue;
+    }
+    const mark = r.status === 'info' ? '' : r.meets ? ' ✓' : ' ✕';
+    val.textContent = `${fmtNum(r.mean, r.unit === 's' ? 2 : 1)} ${r.unit}${mark}`;
+    val.className = `req-val num ${r.status === 'info' ? 'info' : r.meets ? 'good' : 'bad'}`;
+    val.title = r.cgOnly ? t('cgRadius') : r.n > 1 ? `± ${fmtNum(r.sd, 2)} ${r.unit}` : '';
+  }
+  const h = g.durability.activeHours;
+  $('gVal02').textContent = `${fmtNum(h, h < 10 ? 2 : 1)} / ${g.durability.targetHours} h`;
+  $('gBar02').style.width = `${(g.durability.fraction * 100).toFixed(1)}%`;
+  $('eImpact').textContent = g.events.impact;
+  $('eJump').textContent = g.events.jump;
+  $('eBrake').textContent = g.events.hardBrake;
+  $('uActive').textContent = clock(g.today.activeS);
+  $('uDist').textContent = `${fmtNum(g.today.distanceM / 1000, 2)} km`;
 }
 
 function renderRunLog() {
@@ -183,8 +226,12 @@ function renderRunLog() {
       [e.driver || '—', ''],
       [start, ''],
       [clock(e.duration), 'r'],
+      [e.analysis ? clock(e.analysis.activeS) : '—', 'r'],
+      [e.analysis ? `${fmtNum(e.analysis.distanceM / 1000, 2)} km` : '—', 'r'],
       [`${fmtNum(e.maxSpeed, 1)} km/h`, 'r'],
       [`${fmtNum(e.maxAlong, 2)} / ${fmtNum(e.maxAlat, 2)}`, 'r'],
+      [e.analysis ? `${e.analysis.counts.impact} / ${e.analysis.counts.jump} / ${e.analysis.counts.hardBrake}` : '—', 'r'],
+      [runResult(e), 'r'],
     ];
     cells.forEach(([text, cls], i) => {
       const td = document.createElement('td');
@@ -410,6 +457,6 @@ setInterval(() => {
   renderStatus();
 }, 250);
 setInterval(() => {
-  if (runLogDirty) { renderRunLog(); runLogDirty = false; }
+  if (runLogDirty) { renderRunLog(); renderGoals(); runLogDirty = false; }
 }, 1000);
 setInterval(() => runLog.save(), 5000); // persist live stats

@@ -49,6 +49,23 @@ export function folderName(entry) {
     .join('_');
 }
 
+/** Merge a live analysis snapshot into a stored one without ever losing data (page reloads). */
+export function mergeAnalysis(stored, live) {
+  if (!stored) return structuredClone(live);
+  const byT = (xs) => new Map(xs.map((x) => [Math.round(x.t * 100), x]));
+  const union = (a = [], b = []) => [...new Map([...byT(a), ...byT(b)]).values()].sort((x, y) => x.t - y.t);
+  const counts = { ...stored.counts };
+  for (const [k, v] of Object.entries(live.counts ?? {})) counts[k] = Math.max(counts[k] ?? 0, v);
+  return {
+    activeS: Math.max(stored.activeS ?? 0, live.activeS ?? 0),
+    distanceM: Math.max(stored.distanceM ?? 0, live.distanceM ?? 0),
+    counts,
+    impactBins: (live.impactBins ?? []).map((v, i) => Math.max(v, stored.impactBins?.[i] ?? 0)),
+    attempts: union(stored.attempts, live.attempts),
+    turns: union(stored.turns, live.turns),
+  };
+}
+
 export class RunLog {
   /** @param {{load: () => any, save: (entries: object[]) => void}} storage */
   constructor(storage) {
@@ -106,7 +123,7 @@ export class RunLog {
    * the dashboard only sees the rest of the run, so duration comes from the run's real start and
    * maxima keep the larger value.
    */
-  updateStats(sessionId, { lastSampleAt, maxSpeed, maxAlong, maxAlat, deviceId }) {
+  updateStats(sessionId, { lastSampleAt, maxSpeed, maxAlong, maxAlat, deviceId, analysis }) {
     const e = this.find(sessionId);
     if (!e) return;
     if (Number.isFinite(lastSampleAt)) e.duration = Math.max(e.duration, (lastSampleAt - e.startedAt) / 1000);
@@ -114,6 +131,7 @@ export class RunLog {
     e.maxAlong = Math.max(e.maxAlong, maxAlong ?? 0);
     e.maxAlat = Math.max(e.maxAlat, maxAlat ?? 0);
     if (deviceId) e.deviceId = deviceId;
+    if (analysis) e.analysis = mergeAnalysis(e.analysis, analysis);
   }
 
   clear() {
@@ -157,9 +175,41 @@ export function toMetaYaml(entry, { vehicleId = 'felinos-2027', axisMap, deviceM
     `  model: ${yq(deviceModel)}`,
     '  mounting: ""',
     `  axis_map: {x: ${yq(ax.x)}, y: ${yq(ax.y)}, z: ${yq(ax.z)}}`,
-    `notes: ${yq(`duration ${Math.round(entry.duration)} s; max speed ${entry.maxSpeed.toFixed(1)} km/h; max |a_long| ${entry.maxAlong.toFixed(2)} g; max |a_lat| ${entry.maxAlat.toFixed(2)} g`)}`,
+    `notes: ${yq(runNotes(entry))}`,
     '',
   ].join('\n');
+}
+
+/** Best (lowest) value of a field across a run's launch attempts, or null. */
+const bestAttempt = (entry, field) => {
+  const xs = (entry.analysis?.attempts ?? []).map((a) => a[field]).filter((x) => Number.isFinite(x));
+  return xs.length ? Math.min(...xs) : null;
+};
+const minTurn = (entry) => {
+  const xs = (entry.analysis?.turns ?? []).map((x) => x.rCgM).filter((x) => Number.isFinite(x));
+  return xs.length ? Math.min(...xs) : null;
+};
+
+/** Live summary written into meta.yaml notes (the offline analysis recomputes everything). */
+function runNotes(entry) {
+  const a = entry.analysis;
+  const parts = [
+    `duration ${Math.round(entry.duration)} s`,
+    `max speed ${entry.maxSpeed.toFixed(1)} km/h`,
+    `max |a_long| ${entry.maxAlong.toFixed(2)} g`,
+    `max |a_lat| ${entry.maxAlat.toFixed(2)} g`,
+  ];
+  if (a) {
+    parts.push(`active ${Math.round(a.activeS)} s`, `distance ${(a.distanceM / 1000).toFixed(2)} km`);
+    parts.push(`impacts ${a.counts.impact}, jumps ${a.counts.jump}, hard brakes ${a.counts.hardBrake}, hard corners ${a.counts.hardCorner}`);
+    const t100 = bestAttempt(entry, 't100');
+    const t150 = bestAttempt(entry, 't150');
+    const r = minTurn(entry);
+    if (t100 !== null) parts.push(`best 100 ft ${t100.toFixed(2)} s`);
+    if (t150 !== null) parts.push(`best 150 ft ${t150.toFixed(2)} s`);
+    if (r !== null) parts.push(`tightest steady turn R_cg ${r.toFixed(2)} m`);
+  }
+  return `${parts.join('; ')} (live estimates)`;
 }
 
 const csvCell = (v) => {
@@ -168,11 +218,17 @@ const csvCell = (v) => {
 };
 
 export function toCsv(entries) {
-  const head = ['run', 'test', 'suspension', 'cvt', 'driver', 'place', 'start_local', 'duration_s', 'max_speed_kmh', 'max_along_g', 'max_alat_g', 'session_id', 'device_id', 'folder'];
+  const head = ['run', 'test', 'suspension', 'cvt', 'driver', 'place', 'start_local', 'duration_s', 'max_speed_kmh', 'max_along_g', 'max_alat_g', 'session_id', 'device_id', 'folder',
+    'active_s', 'distance_km', 'impacts', 'jumps', 'hard_brakes', 'hard_corners', 'best_100ft_s', 'best_150ft_s', 'min_turn_radius_cg_m'];
+  const fmt = (x, d) => (x === null || x === undefined ? '' : x.toFixed(d));
   const rows = entries.map((e) => {
     const d = new Date(e.startedAt);
     const start = `${localDate(e.startedAt)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-    return [e.run, e.test, e.suspension, e.cvt, e.driver, e.place, start, Math.round(e.duration), e.maxSpeed.toFixed(1), e.maxAlong.toFixed(2), e.maxAlat.toFixed(2), e.sessionId, e.deviceId ?? '', folderName(e)];
+    const a = e.analysis;
+    return [e.run, e.test, e.suspension, e.cvt, e.driver, e.place, start, Math.round(e.duration), e.maxSpeed.toFixed(1), e.maxAlong.toFixed(2), e.maxAlat.toFixed(2), e.sessionId, e.deviceId ?? '', folderName(e),
+      a ? Math.round(a.activeS) : '', a ? (a.distanceM / 1000).toFixed(3) : '',
+      a?.counts.impact ?? '', a?.counts.jump ?? '', a?.counts.hardBrake ?? '', a?.counts.hardCorner ?? '',
+      fmt(bestAttempt(e, 't100'), 2), fmt(bestAttempt(e, 't150'), 2), fmt(minTurn(e), 2)];
   });
   return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }

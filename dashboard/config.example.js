@@ -21,4 +21,7 @@ export default {
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,
   placeName: 'León, Gto.',
+  // Vehicle track width in metres (config/vehicles track_width_m) for the inner-tire turning
+  // radius of VG-05. null = the dashboard shows the radius at the CG only.
+  trackWidthM: null,
 };

@@ -82,16 +82,19 @@
         <h3 data-i18n="goals">Vehicle goals</h3>
         <div class="sub" data-i18n="goalsSub">This session's results against the requirements</div>
         <div class="req">
-          <div class="req-item"><span class="req-id">VG-04</span><div class="req-name"><span class="nm" data-i18n="r04">Acceleration 100 ft</span><span class="tg"><span data-i18n="target">Target</span> ≤ 4.3 s · 3 <span data-i18n="runs">runs</span></span></div><div class="req-val" data-i18n="noData">No data</div></div>
-          <div class="req-item"><span class="req-id">VG-05</span><div class="req-name"><span class="nm" data-i18n="r05">Turning radius</span><span class="tg"><span data-i18n="target">Target</span> 6 ft @ ~5 mph</span></div><div class="req-val" data-i18n="noData">No data</div></div>
-          <div class="req-item"><span class="req-id">VG-06</span><div class="req-name"><span class="nm" data-i18n="r06">Hill climb 150 ft at 30°</span><span class="tg"><span data-i18n="target">Target</span> &lt; 20 s</span></div><div class="req-val" data-i18n="noData">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-04</span><div class="req-name"><span class="nm" data-i18n="r04">Acceleration 100 ft</span><span class="tg"><span data-i18n="target">Target</span> ≤ 4.3 s · <span id="gRuns04">3 runs</span></span></div><div class="req-val num" id="gVal04">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-05</span><div class="req-name"><span class="nm" data-i18n="r05">Turning radius</span><span class="tg"><span data-i18n="target">Target</span> 6 ft @ ~5 mph · <span id="gRuns05">3 runs</span></span></div><div class="req-val num" id="gVal05">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-06</span><div class="req-name"><span class="nm" data-i18n="r06">Hill climb 150 ft at 30°</span><span class="tg"><span data-i18n="target">Target</span> &lt; 20 s · <span id="gRuns06">3 runs</span></span></div><div class="req-val num" id="gVal06">No data</div></div>
+          <div class="req-item"><span class="req-id">VG-02</span><div class="req-name"><span class="nm" data-i18n="r02">Durability</span><span class="tg"><span data-i18n="target">Target</span> 80 h · <span data-i18n="activeHoursHint">active hours, all runs</span></span>
+            <span class="bar" aria-hidden="true"><i id="gBar02"></i></span></div><div class="req-val num" id="gVal02">0.0 h</div></div>
         </div>
         <div class="events">
-          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="impacts">Impacts &gt; 2 g</div></div>
-          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="jumps">Jumps</div></div>
-          <div class="ev"><div class="n num">—</div><div class="t" data-i18n="hardBrakes">Hard braking</div></div>
+          <div class="ev"><div class="n num" id="eImpact">—</div><div class="t" data-i18n="impacts">Impacts &gt; 2 g</div></div>
+          <div class="ev"><div class="n num" id="eJump">—</div><div class="t" data-i18n="jumps">Jumps</div></div>
+          <div class="ev"><div class="n num" id="eBrake">—</div><div class="t" data-i18n="hardBrakes">Hard braking</div></div>
         </div>
-        <div class="foot" data-i18n="analysisSoon">Automatic analysis arrives in v0.2</div>
+        <div class="usage"><span data-i18n="activeToday">Active today</span> <b class="num" id="uActive">0:00</b> · <b class="num" id="uDist">0.00 km</b></div>
+        <div class="foot" data-i18n="liveEstimates">Today's runs · live estimates; official results come from the recording analysis</div>
       </div>
     </div>
   </section>
@@ -108,7 +111,8 @@
       <table>
         <thead><tr>
           <th data-i18n="colRun">Run</th><th data-i18n="testType">Test type</th><th data-i18n="colConfig">Configuration</th><th data-i18n="driver">Driver</th>
-          <th data-i18n="colStart">Start</th><th class="r" data-i18n="colDuration">Duration</th><th class="r" data-i18n="colMaxSpeed">Max speed</th><th class="r" data-i18n="colMaxG">Max g (long / lat)</th><th></th>
+          <th data-i18n="colStart">Start</th><th class="r" data-i18n="colDuration">Duration</th><th class="r" data-i18n="colActive">Active</th><th class="r" data-i18n="colDistance">Distance</th>
+          <th class="r" data-i18n="colMaxSpeed">Max speed</th><th class="r" data-i18n="colMaxG">Max g (long / lat)</th><th class="r" data-i18n="colEvents">Impacts / jumps / brakes</th><th class="r" data-i18n="colResult">Result</th><th></th>
         </tr></thead>
         <tbody id="runRows"></tbody>
       </table>

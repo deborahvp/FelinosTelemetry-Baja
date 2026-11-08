@@ -97,5 +97,22 @@ test('CSV export quotes fields that need it', () => {
   log.startSession('S1', { ...HEADER, driver: 'Pérez, Ana' }, { startedAt: new Date(2026, 10, 8, 9, 5, 7).getTime() });
   const csv = toCsv(log.entries).split('\n');
   assert.equal(csv[0].split(',')[0], 'run');
-  assert.match(csv[1], /^R01,acceleration,susp-A,cvt-1,"Pérez, Ana",La Salle Bajío,2026-11-08 09:05:07,0,0\.0,0\.00,0\.00,S1,,R01_acceleration_susp-A_cvt-1$/);
+  assert.match(csv[1], /^R01,acceleration,susp-A,cvt-1,"Pérez, Ana",La Salle Bajío,2026-11-08 09:05:07,0,0\.0,0\.00,0\.00,S1,,R01_acceleration_susp-A_cvt-1,,,,,,,,,$/);
+});
+
+test('live analysis is stored per run and exported to CSV and meta.yaml notes', () => {
+  const log = new RunLog(memory());
+  const { entry } = log.startSession('S1', HEADER, { startedAt: 1_000_000 });
+  const analysis = {
+    activeS: 95.4, distanceM: 812, counts: { impact: 4, jump: 1, hardBrake: 2, hardCorner: 0 }, impactBins: [3, 1, 0],
+    attempts: [{ t: 10, t100: 4.61, t150: 5.9 }, { t: 30, t100: 4.38, t150: null }], turns: [{ t: 50, rCgM: 2.8 }, { t: 70, rCgM: 2.65 }],
+  };
+  log.updateStats('S1', { lastSampleAt: 1_100_000, analysis });
+  log.updateStats('S1', { lastSampleAt: 1_100_000, analysis: { ...analysis, activeS: 10, counts: { impact: 1, jump: 0, hardBrake: 0, hardCorner: 0 } } });
+  assert.equal(entry.analysis.activeS, 95.4); // a reload never shrinks it
+  assert.equal(entry.analysis.counts.impact, 4);
+  const row = toCsv(log.entries).split('\n')[1].split(',');
+  assert.deepEqual(row.slice(-9), ['95', '0.812', '4', '1', '2', '0', '4.38', '5.90', '2.65']);
+  const yaml = toMetaYaml(entry);
+  assert.match(yaml, /active 95 s; distance 0\.81 km; impacts 4, jumps 1, hard brakes 2, hard corners 0; best 100 ft 4\.38 s; best 150 ft 5\.90 s; tightest steady turn R_cg 2\.65 m \(live estimates\)/);
 });

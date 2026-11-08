@@ -5,7 +5,8 @@
 // points for the map, and running stats for the status panel. The full session stays in
 // memory so charts can be scrolled back.
 
-import { LevelReference, accelToVehicle, attitude, frameFromGravity, parseAxisMap, toDeg, toG, toKmh, toVehicle, unitScale } from './vehicle.js';
+import { DEFAULTS, LiveAnalyzer } from './analysis.js';
+import { G0, LevelReference, accelToVehicle, attitude, frameFromGravity, parseAxisMap, toDeg, toG, toKmh, toVehicle, unitScale } from './vehicle.js';
 
 export const PLOT_DT = 0.04; // 25 Hz for plotting only
 const BATTERY_WINDOW_S = 300;
@@ -47,8 +48,9 @@ const vec = (v) => [Number(v?.x), Number(v?.y), Number(v?.z)];
 const finite3 = (a) => a.every(Number.isFinite);
 
 export class Session {
-  constructor(id, { axisMap, savedLevel = null } = {}) {
+  constructor(id, { axisMap, savedLevel = null, analysisConfig = DEFAULTS } = {}) {
     this.id = id;
+    this.analysis = new LiveAnalyzer(analysisConfig);
     this.deviceId = null;
     this.axes = parseAxisMap(axisMap ?? { x: 'lateral', y: 'longitudinal', z: 'vertical' });
     this.level = new LevelReference(5);
@@ -69,6 +71,19 @@ export class Session {
     this.lastMessageId = null;
     this.lastReceivedMs = null;
     this.latencyS = null;
+  }
+
+  /**
+   * |specific force| in g from a linear acceleration sample (phone frame, m/s²): ≈1 at rest or
+   * cruising, ≈0 in free fall. Uses the current gravity direction, sign-corrected per platform.
+   */
+  specificForceG(a) {
+    if (!this.gravity || !this.frame) return 1;
+    const n = Math.hypot(...this.gravity);
+    if (!n) return 1;
+    const s = this.frame.accelSign ?? 1; // gravity reading points up on Android, down on raw iOS
+    const f = a.map((x, i) => x * s + (this.gravity[i] / n) * s * G0);
+    return Math.hypot(...f) / G0;
   }
 
   /** Relative time (s since session start) of the newest sample. */
@@ -139,6 +154,8 @@ export class Session {
         const alat = toG(av.lat);
         const yaw = this.gyro ? toDeg(toVehicle(this.gyro, this.frame).vert) : 0;
         const grade = this.gravity ? attitude(this.gravity, this.frame).pitch : 0;
+        // Full-rate analysis (events need peaks the 25 Hz plot decimation would smooth away).
+        this.analysis.imu(t, { long: along, lat: alat, vert: toG(av.vert), sf: this.specificForceG(a), yaw, grade });
         const row = this.dec.push(rel, { along, alat, yaw, grade });
         if (row) this.pushImu(row);
         return;
@@ -158,6 +175,7 @@ export class Session {
         this.now.speed = speed;
         this.now.acc = Number.isFinite(acc) ? acc : null;
         if (speed !== null) this.max.speed = Math.max(this.max.speed, speed);
+        this.analysis.gps(t, speed, lat, lon);
         return;
       }
       case 'battery': {
@@ -239,6 +257,10 @@ export class Store {
     const id = String(message.sessionId ?? 'unknown');
     let changed = false;
     if (!this.session || this.session.id !== id) {
+      if (this.session) {
+        this.session.analysis.flush(); // close a launch/turn still open when the recording ended
+        this.previous = this.session;
+      }
       const device = message.deviceId ? String(message.deviceId) : null;
       this.session = new Session(id, { axisMap: this.axisMap, savedLevel: device ? this.loadLevel(device) : null });
       changed = true;
