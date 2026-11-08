@@ -40,7 +40,24 @@ export class TrackMap {
     this.trace = L.layerGroup().addTo(this.map);
     this.overlay = null;
     this.hasImage = false;
+    this.home = { center, zoom, bounds: null };
     this.reset();
+    // If the page loaded hidden (background tab, collapsed layout) the map measured 0 px and
+    // fitted the whole world. Re-measure on resize and re-frame until GPS data arrives.
+    let lastWidth = 0;
+    new ResizeObserver(() => {
+      const w = el.clientWidth;
+      if (!w || w === lastWidth) return;
+      const wasZero = lastWidth === 0;
+      lastWidth = w;
+      this.map.invalidateSize();
+      if (wasZero && this.drawn === 0) this.goHome();
+    }).observe(el);
+  }
+
+  goHome() {
+    if (this.home.bounds) this.map.fitBounds(this.home.bounds);
+    else this.map.setView(this.home.center, this.home.zoom);
   }
 
   async loadTrack(url) {
@@ -51,7 +68,9 @@ export class TrackMap {
       const bounds = L.latLngBounds(track.bounds);
       this.overlay = L.imageOverlay(new URL(track.image, res.url).href, bounds).addTo(this.map);
       this.overlay.bringToBack();
-      this.map.fitBounds(bounds);
+      this.home.bounds = bounds;
+      this.map.invalidateSize();
+      this.goHome();
       this.hasImage = true;
       return true;
     } catch {
