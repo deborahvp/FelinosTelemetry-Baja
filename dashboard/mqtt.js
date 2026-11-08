@@ -1,7 +1,36 @@
 // Live connection to the broker with MQTT.js over WSS. Use a READ-ONLY broker user here:
-// config.js is readable by anyone who can open the dashboard.
+// config.js and the browser-saved connection are readable by anyone with access to them.
 
 /* global mqtt */
+
+export const DEFAULT_TOPIC = 'felinos/#';
+
+/**
+ * Connection settings: the ones saved in this browser (Connection dialog) win over config.js,
+ * so a hosted copy of the dashboard needs no credentials in its files.
+ * @returns {{url: string, username: string, password: string, topic: string, source: 'browser'|'config'|'none'}}
+ */
+export function resolveConnection(saved, fromConfig) {
+  const clean = (c) => ({
+    url: String(c?.url ?? '').trim(),
+    username: String(c?.username ?? '').trim(),
+    password: String(c?.password ?? ''),
+    topic: String(c?.topic ?? '').trim() || DEFAULT_TOPIC,
+  });
+  if (saved && String(saved.url ?? '').trim()) return { ...clean(saved), source: 'browser' };
+  if (fromConfig && String(fromConfig.url ?? '').trim()) return { ...clean(fromConfig), source: 'config' };
+  return { ...clean({}), source: 'none' };
+}
+
+/** Basic check of a broker URL typed by a person: must be ws:// or wss://. */
+export function isBrokerUrl(url) {
+  try {
+    const u = new URL(String(url).trim());
+    return (u.protocol === 'wss:' || u.protocol === 'ws:') && Boolean(u.hostname);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * @param {{url: string, username: string, password: string, topic: string}} cfg

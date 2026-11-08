@@ -64,6 +64,10 @@ Check a recording after each run:
 felinos check path/to/sensorlogger.zip      # sensors, sample rate, duration
 ```
 
+Hosted dashboard: `dashboard/` deploys as-is to any static host (Vercel: Root Directory
+`dashboard`, no build). It ships no credentials — each browser enters the read-only broker user
+once in the **Connection** dialog. See [docs/deploy-vercel.es.md](docs/deploy-vercel.es.md).
+
 Field guides for the team (Spanish, printable): [field guide](docs/field-guide.es.md) ·
 [Sensor Logger + HiveMQ setup](docs/sensorlogger-setup.es.md). Data dictionary:
 [docs/data-format.md](docs/data-format.md).

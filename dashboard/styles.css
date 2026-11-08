@@ -83,7 +83,7 @@ button { font: inherit; }
   color: inherit; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
 .meta:hover, .meta:focus-visible { background: rgba(255,255,255,.1); opacity: 1; }
 .meta b { font-weight: 600; opacity: 1; }
-.pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; border: 0; cursor: pointer; font: inherit;
   background: rgba(52,196,139,.18); color: #7ef0bf; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
 .pill i { width: 8px; height: 8px; border-radius: 50%; background: #34c48b; box-shadow: 0 0 0 3px rgba(52,196,139,.25); }
 .pill.warn { background: rgba(240,166,58,.18); color: #ffd08a; }
@@ -194,6 +194,10 @@ dialog input, dialog select { font: inherit; font-size: 14px; padding: 7px 9px; 
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
 dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 dialog .hint-text { font-size: 12px; color: var(--text-3); margin: 0 0 10px; }
+dialog .hint-text.error { color: var(--critical); font-weight: 600; }
+dialog .hint-text[hidden] { display: none; }
+.pill:focus-visible { outline: 2px solid var(--brand-on); outline-offset: 2px; }
+.banner.clickable { cursor: pointer; }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 6px 0 0; }
 dialog menu button { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--text); font-weight: 600; cursor: pointer; }

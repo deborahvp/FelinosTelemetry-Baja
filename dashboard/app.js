@@ -4,7 +4,7 @@ import { LiveChart, fmtNum } from './charts.js';
 import { GGDiagram } from './gg.js';
 import { pickLanguage, translate } from './i18n.js';
 import { TrackMap } from './map.js';
-import { connectLive } from './mqtt.js';
+import { connectLive, isBrokerUrl, resolveConnection } from './mqtt.js';
 import { parseNdjson, play } from './replay.js';
 import { RunLog, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
 import { Store } from './state.js';
@@ -70,7 +70,9 @@ async function loadConfig() {
 const { found, cfg } = await loadConfig();
 const demoUrl = params.get('demo');
 const demoSpeed = demoUrl ? Number(params.get('speed')) || 1 : 1; // latency is meaningless when sped up
-let conn = demoUrl ? 'demo' : found && cfg.mqtt.url ? 'connecting' : 'noConfig';
+// Browser-saved connection (Connection dialog) wins over config.js, so a hosted copy needs no secrets.
+const connection = resolveConnection(store_.get('felinos.conn'), found ? cfg.mqtt : null);
+let conn = demoUrl ? 'demo' : connection.source !== 'none' ? 'connecting' : 'noConfig';
 let dirty = true;
 
 const store = new Store({
@@ -222,7 +224,11 @@ function renderStatus() {
   const banner = $('banner');
   const msg = conn === 'noConfig' ? ['bad', t('noConfigBanner')] : conn === 'auth' ? ['bad', t('authError')] : conn === 'connected' && !s ? ['', t('waitingData')] : null;
   banner.hidden = !msg;
-  if (msg) { banner.className = `banner ${msg[0]}`; banner.textContent = msg[1]; }
+  if (msg) {
+    const clickable = conn === 'noConfig' || conn === 'auth';
+    banner.className = `banner ${msg[0]}${clickable ? ' clickable' : ''}`;
+    banner.textContent = msg[1];
+  }
 
   // run meta
   $('mRun').textContent = run.run;
@@ -312,6 +318,36 @@ dialog.addEventListener('close', () => {
   runLogDirty = true;
   renderStatus();
 });
+// Connection dialog: settings saved in this browser only (hosted dashboard has no config.js).
+const connDialog = $('connDialog');
+const connForm = $('connForm');
+function openConnection() {
+  for (const k of ['url', 'username', 'password', 'topic']) connForm.elements[k].value = connection[k] ?? '';
+  $('connSource').textContent = connection.source === 'browser' ? t('connFromBrowser') : connection.source === 'config' ? t('connFromConfig') : '';
+  $('connForget').hidden = connection.source !== 'browser';
+  $('connError').hidden = true;
+  connDialog.showModal();
+}
+$('pill').onclick = () => { if (!demoUrl) openConnection(); };
+$('banner').onclick = () => { if (conn === 'noConfig' || conn === 'auth') openConnection(); };
+$('connSave').onclick = (ev) => {
+  if (!isBrokerUrl(connForm.elements.url.value)) {
+    ev.preventDefault();
+    $('connError').textContent = t('connInvalidUrl');
+    $('connError').hidden = false;
+  }
+};
+connDialog.addEventListener('close', () => {
+  if (connDialog.returnValue === 'save') {
+    const v = Object.fromEntries(['url', 'username', 'password', 'topic'].map((k) => [k, connForm.elements[k].value.trim()]));
+    store_.set('felinos.conn', v);
+    location.reload();
+  } else if (connDialog.returnValue === 'forget') {
+    try { localStorage.removeItem('felinos.conn'); } catch { /* private mode */ }
+    location.reload();
+  }
+});
+
 $('exportCsv').onclick = () => {
   download(`felinos-run-log_${localDate(Date.now())}.csv`, toCsv(runLog.entries), 'text/csv');
 };
@@ -327,7 +363,7 @@ if (demoUrl) {
   const records = parseNdjson(await res.text());
   play(records, (m) => store.handle(m), { speed: demoSpeed });
 } else if (conn === 'connecting') {
-  connectLive(cfg.mqtt, {
+  connectLive(connection, {
     onMessage: (m) => store.handle(m),
     onStatus: (state) => { conn = state; renderStatus(); },
   });

@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   run ID (R01 → R02), keeping test type and configuration. Table with duration and maxima,
   per-run `meta.yaml` download (validated against `RunMeta`) and CSV export. Driver field in
   the run dialog.
+- Connection dialog (click the connection status): broker URL and read-only user saved per
+  browser, overriding `config.js`, so the dashboard can be hosted (e.g. Vercel) with no
+  credentials in its files. `dashboard/vercel.json` and a Spanish deploy guide.
 
 ## [0.1.0] - 2026-11-07
 

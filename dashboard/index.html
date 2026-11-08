@@ -24,7 +24,7 @@
     <span data-i18n="run">Run</span> <b><span id="mRun">R01</span> · <span id="mTest">Acceleration</span></b> · <span id="mConfig">susp-A · cvt-1</span><br>
     <span data-i18n="session">Session</span> <span id="mSession">—</span>
   </button>
-  <div class="pill warn" id="pill"><i></i><span id="pillText">Connecting</span></div>
+  <button class="pill warn" id="pill" data-i18n-title="connection"><i></i><span id="pillText">Connecting</span></button>
   <div class="seg lang" data-i18n-aria="language" role="group">
     <button data-lang="en" class="on">EN</button><button data-lang="es">ES</button>
   </div>
@@ -143,6 +143,26 @@
     <menu>
       <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
       <button value="save" class="primary" data-i18n="save">Save</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="connDialog">
+  <form method="dialog" id="connForm">
+    <h2 data-i18n="connection">Broker connection</h2>
+    <label><span data-i18n="brokerUrl">Broker URL (WebSocket TLS)</span><input name="url" type="url" placeholder="wss://your-cluster.hivemq.cloud:8884/mqtt" autocomplete="off" spellcheck="false"></label>
+    <div class="row">
+      <label><span data-i18n="username">User</span><input name="username" autocomplete="username" spellcheck="false"></label>
+      <label><span data-i18n="password">Password</span><input name="password" type="password" autocomplete="current-password"></label>
+    </div>
+    <label><span data-i18n="topic">Topic</span><input name="topic" placeholder="felinos/#" spellcheck="false"></label>
+    <p class="hint-text" data-i18n="connHint">Saved only in this browser. Use the read-only dashboard user, never the phone's.</p>
+    <p class="hint-text" id="connSource"></p>
+    <p class="hint-text error" id="connError" hidden></p>
+    <menu>
+      <button value="forget" formnovalidate id="connForget" data-i18n="forget">Forget</button>
+      <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
+      <button value="save" class="primary" id="connSave" data-i18n="saveConnect">Save and connect</button>
     </menu>
   </form>
 </dialog>
