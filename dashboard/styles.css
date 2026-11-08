@@ -152,6 +152,9 @@ main { padding: 16px 20px 20px; display: grid; grid-template-columns: minmax(0, 
 .map-legend span.ramp { display: inline-block; width: 80px; height: 7px; border-radius: 3px;
   background: linear-gradient(90deg, var(--seq-low), var(--seq-high)); }
 .map-coords { right: 10px; }
+/* Leave room for the satellite attribution line at the bottom */
+.map-wrap .map-legend, .map-wrap .map-coords { bottom: 24px; }
+.leaflet-control-attribution { font-size: 10px; }
 
 #gg { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; }
 
@@ -224,5 +227,5 @@ dialog menu button.primary { background: var(--brand-blue); border-color: var(--
   .kpi .value { font-size: 22px; }
   .chart { height: 180px; }
   #map { height: 240px; }
-  .map-coords { top: 10px; bottom: auto; }
+  .map-wrap .map-coords { top: 10px; bottom: auto; }
 }

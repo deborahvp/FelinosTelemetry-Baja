@@ -1,7 +1,7 @@
 # Guía de campo — pruebas con telemetría
 
 > Felinos Racing · Baja SAE · Imprimir y llevar a pits.
-> Lugar de la primera prueba: **estacionamiento de la entrada de Ingenierías, Universidad La Salle Bajío**.
+> Lugar de la primera prueba: **zona en León, Gto. (aprox. 21.0894, −101.6987)**; la pista exacta se define en sitio.
 > Regla de oro: **la grabación del teléfono es la fuente de verdad.** El dashboard en vivo es solo para monitorear.
 
 ## 1. Antes de salir (checklist)
@@ -62,7 +62,7 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 
 - **Aceleración (VG-04):** salida desde parado, 100 ft medidos con conos. 3 corridas por configuración.
 - **Radio de giro (VG-05):** círculos a ~5 mph (8 km/h) con volante a tope, ≥ 3 vueltas estables, en ambos sentidos.
-- **Libre:** recorrido por el estacionamiento con frenadas y curvas para tener histograma de eventos.
+- **Libre:** recorrido por la zona de pruebas con frenadas y curvas para tener histograma de eventos.
 
 ## 5. Después de cada corrida
 
@@ -86,16 +86,26 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 - [ ] Anotar consumo de datos del chip y batería usada por hora.
 - [ ] Anotar pendientes de la sección 4 de `sensorlogger-setup.es.md`.
 
-## 7. Problemas comunes
+## 7. Mapa
+
+- **Con internet:** el mapa muestra imagen satelital de la zona (Esri) y encima la traza GPS. No hay que hacer nada.
+- **Sin internet (respaldo):** una captura satelital propia en `dashboard/assets/`:
+  1. En Google Earth (o Google Maps vista satélite), **con el norte hacia arriba**, encuadrar la zona amplia de pruebas. Sugerencia: de **21.0867, −101.7016** (esquina inferior izquierda) a **21.0921, −101.6958** (esquina superior derecha), unos 600 m × 600 m.
+  2. Tomar la captura y guardarla como `dashboard/assets/track.jpg`.
+  3. Anotar las coordenadas reales de la **esquina inferior izquierda** y la **superior derecha** de la captura (clic derecho en el mapa → copiar coordenadas).
+  4. Copiar `assets/track.example.json` → `assets/track.json` y poner esas dos esquinas en `bounds` (`[[sur, oeste], [norte, este]]`).
+  - La captura no se sube a GitHub (está en `.gitignore`) porque la imagen tiene derechos de Google.
+
+## 8. Problemas comunes
 
 | Síntoma | Causa probable | Qué hacer |
 | --- | --- | --- |
-| Dashboard: "Sin configuración" | Falta `dashboard/config.js` | Copiar `config.example.js` → `config.js` y llenarlo |
+| Dashboard: "Sin configuración" | Falta `dashboard/config.js` | Copiar `config.example.js` → `config.js` y llenarlo, o clic en el aviso y escribir la conexión |
 | Dashboard: "Reconectando" | Sin internet o URL mal | Revisar datos de la laptop; URL `wss://<host>:8884/mqtt` |
 | "El broker rechazó la conexión" | Usuario o contraseña | Revisar `config.js` / `.env` |
 | Conectado pero sin datos | Teléfono no transmite | ¿Streaming activado? ¿Test Publish? ¿Datos móviles? ¿Topic empieza con `felinos/`? |
 | "N perdidos" en Último mensaje | Mala cobertura | No pasa nada: la grabación local tiene todo |
 | Pendiente marca ≠ 0 en plano | Nivel tomado en movimiento | Detener en plano → **Nivelar** |
 | a longitudinal al revés | Signo de `axisMap` | Ver sección 2 |
-| Mapa sin imagen | No hay `assets/track.json` | Normal por ahora; la traza se ve igual |
+| Mapa sin imagen | Sin internet y sin `assets/track.json` | La traza se ve igual; para tener fondo sin internet, ver sección 7 |
 | `felinos ingest`: `MQTT_HOST is not set` | Falta `.env` | Copiar `.env.example` → `.env` |

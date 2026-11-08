@@ -19,11 +19,23 @@ export function rampColor(low, high, f) {
   return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
 }
 
+// Optional online satellite basemap (needs internet; tiles the browser already saw stay cached).
+// Without internet the map falls back to the plain terrain color plus the offline track image.
+export const SATELLITE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
+};
+
 export class TrackMap {
-  constructor(el, { center, zoom, maxSpeedKmh, t }) {
+  constructor(el, { center, zoom, maxSpeedKmh, t, satellite = false }) {
     this.maxSpeed = maxSpeedKmh;
     this.t = t;
     this.map = L.map(el, { attributionControl: false, preferCanvas: true, zoomSnap: 0.25 }).setView(center, zoom);
+    this.hasSatellite = Boolean(satellite);
+    if (this.hasSatellite) {
+      L.control.attribution({ prefix: false }).addTo(this.map);
+      L.tileLayer(SATELLITE.url, { attribution: SATELLITE.attribution, maxNativeZoom: 19, maxZoom: 21 }).addTo(this.map);
+    }
     this.renderer = L.canvas({ padding: 0.5 });
     this.trace = L.layerGroup().addTo(this.map);
     this.overlay = null;

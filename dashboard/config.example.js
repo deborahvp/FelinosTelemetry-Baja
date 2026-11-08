@@ -13,10 +13,12 @@ export default {
   axisMap: { x: 'lateral', y: 'longitudinal', z: 'vertical' },
   // Optional offline track image; see assets/track.example.json
   track: 'assets/track.json',
-  // Map start position when there is no track image (test site at La Salle Bajío, approximate)
+  // Map start position when there is no track image (test site in León, approximate)
   mapCenter: [21.0894, -101.6987],
-  mapZoom: 18,
+  mapZoom: 17,
+  // Online satellite basemap (Esri World Imagery). Needs internet; set false to keep the map fully offline.
+  satellite: true,
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,
-  placeName: 'La Salle Bajío',
+  placeName: 'León, Gto.',
 };

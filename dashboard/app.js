@@ -14,10 +14,11 @@ const DEFAULTS = {
   axisMap: { x: 'lateral', y: 'longitudinal', z: 'vertical' },
   track: 'assets/track.json',
   mapCenter: [21.0894, -101.6987],
-  mapZoom: 18,
+  mapZoom: 17,
+  satellite: true,
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,
-  placeName: 'La Salle Bajío',
+  placeName: 'León, Gto.',
 };
 
 // ---- small helpers -------------------------------------------------------------------
@@ -121,7 +122,7 @@ const charts = {
     ],
   }),
 };
-const map = new TrackMap($('map'), { center: cfg.mapCenter, zoom: cfg.mapZoom, maxSpeedKmh: cfg.mapMaxSpeedKmh, t });
+const map = new TrackMap($('map'), { center: cfg.mapCenter, zoom: cfg.mapZoom, maxSpeedKmh: cfg.mapMaxSpeedKmh, t, satellite: cfg.satellite });
 const gg = new GGDiagram($('gg'), t);
 const hasTrack = cfg.track ? await map.loadTrack(cfg.track) : false;
 
@@ -273,7 +274,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
   document.querySelectorAll('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
-  $('mapSub').textContent = t(hasTrack ? 'mapSub' : 'mapNoImage');
+  $('mapSub').textContent = t(hasTrack ? 'mapSub' : cfg.satellite ? 'mapSat' : 'mapNoImage');
   $('mapRange').textContent = `0 → ${cfg.mapMaxSpeedKmh} km/h`;
   gg.relabel();
   map.relabel();
