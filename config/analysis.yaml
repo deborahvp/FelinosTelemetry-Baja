@@ -1,0 +1,41 @@
+# Analysis thresholds shared by the live dashboard (dashboard/analysis.js DEFAULTS) and the
+# offline Python analysis. A test keeps both in sync.
+# Initial values: calibrate them with the histograms of the first real test (brief §7.4).
+
+usage:
+  active_speed_kmh: 3.0       # moving faster than this counts as active time
+  max_gap_s: 5.0              # GPS gaps longer than this are not counted (signal loss)
+
+events:
+  impact_g: 2.0               # |vertical acceleration, gravity removed| above this = impact
+  impact_refractory_s: 0.3    # min time between two impacts
+  impact_severity_g: [2.0, 3.0, 4.0]   # bins: 2–3 g, 3–4 g, > 4 g
+  freefall_g: 0.3             # |specific force| below this = airborne
+  jump_min_airtime_s: 0.1
+  hard_brake_g: 0.5           # longitudinal deceleration above this...
+  hard_brake_min_s: 0.2       # ...sustained at least this long
+  hard_corner_g: 0.5          # |lateral acceleration| above this...
+  hard_corner_min_s: 0.3      # ...sustained at least this long
+  smooth_s: 0.1               # moving-average window for brake/corner detection
+
+acceleration:                 # VG-04 (100 ft) and VG-06 (150 ft) launches
+  rest_speed_kmh: 1.0
+  rest_min_s: 1.0             # stationary at least this long before a launch
+  launch_g: 0.1               # a_long above rest bias...
+  launch_min_s: 0.1           # ...sustained at least this long
+  distances_m: [30.48, 45.72] # 100 ft, 150 ft
+  timeout_s: 60.0
+  gps_blend: 0.5              # complementary filter weight of GPS speed at each fix
+
+turning:                      # VG-05 steady-state turns
+  window_s: 2.0
+  min_yaw_deg_s: 10.0
+  max_yaw_cv: 0.15            # std/mean of yaw rate in the window
+  speed_kmh: [3.0, 15.0]
+  max_speed_cv: 0.15
+
+durability:                   # VG-02 (80 h without fatigue failure)
+  target_hours: 80.0
+  rainflow_channel: a_vert    # signal for rainflow counting (offline)
+  wohler_m: [3.0, 5.0]        # pseudo-damage exponents (3 ≈ welded steel, 5 ≈ components)
+  reference_damage_per_hour: null   # set after the first rough-track run (equivalent hours)
