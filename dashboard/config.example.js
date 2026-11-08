@@ -13,8 +13,8 @@ export default {
   axisMap: { x: 'lateral', y: 'longitudinal', z: 'vertical' },
   // Optional offline track image; see assets/track.example.json
   track: 'assets/track.json',
-  // Map start position when there is no track image (La Salle Bajío, approximate)
-  mapCenter: [21.1478, -101.7091],
+  // Map start position when there is no track image (test site at La Salle Bajío, approximate)
+  mapCenter: [21.0894, -101.6987],
   mapZoom: 18,
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,

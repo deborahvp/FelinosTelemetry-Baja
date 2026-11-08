@@ -12,7 +12,7 @@ const DEFAULTS = {
   mqtt: { url: '', username: '', password: '', topic: 'felinos/#' },
   axisMap: { x: 'lateral', y: 'longitudinal', z: 'vertical' },
   track: 'assets/track.json',
-  mapCenter: [21.1478, -101.7091],
+  mapCenter: [21.0894, -101.6987],
   mapZoom: 18,
   mapMaxSpeedKmh: 50,
   windowSeconds: 60,
