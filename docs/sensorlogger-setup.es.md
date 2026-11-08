@@ -81,8 +81,10 @@ Probar todo sin el carro (ensayo):
 ```powershell
 felinos dashboard                            # abre el dashboard en el navegador
 felinos ingest                               # en otra terminal
-felinos simulate tests\fixtures\sample_export --publish   # en otra terminal: "reproduce" 60 s reales
+felinos simulate tests\fixtures\sample_export --publish --env-file .env.phone   # otra terminal: "reproduce" 60 s reales
 ```
+
+`.env.phone` es una copia de `.env` con el usuario `phone` (el que publica). Está en `.gitignore`.
 
 Sin internet / sin broker: `felinos simulate tests\fixtures\sample_export --out dashboard\assets\demo.ndjson` y abrir `http://localhost:8000/?demo=assets/demo.ndjson`.
 

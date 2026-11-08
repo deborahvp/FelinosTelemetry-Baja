@@ -18,6 +18,8 @@ data/
 *.ndjson
 !tests/fixtures/**/*.ndjson
 .env
+.env.*
+!.env.example
 dashboard/config.js
 dashboard/assets/track.json
 dashboard/assets/*.jpg

@@ -53,7 +53,7 @@ felinos dashboard                                    # serves dashboard/ and ope
 Rehearse without the car:
 
 ```bash
-felinos simulate tests/fixtures/sample_export --publish            # replay 60 s of real data to the broker
+felinos simulate tests/fixtures/sample_export --publish --env-file .env.phone  # replay 60 s as the phone user
 felinos simulate tests/fixtures/sample_export --out dashboard/assets/demo.ndjson
 # then open http://localhost:8000/?demo=assets/demo.ndjson         # no broker needed
 ```
