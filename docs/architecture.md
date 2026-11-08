@@ -23,7 +23,7 @@ flowchart LR
 | Ingest | `src/felinos_telemetry/ingest/` | paho-mqtt v2 subscriber → `Sink`s. `NdjsonSink` today, `PostgresSink` later. Auto-reconnect with backoff. |
 | Models | `src/felinos_telemetry/models.py` | `RunMeta` (`meta.yaml`), `VehicleConfig`, `Requirement`. |
 | Simulator | `src/felinos_telemetry/simulate.py` | Export → Sensor Logger messages, to rehearse without the car. |
-| Dashboard | `dashboard/` | Static ES modules, no build. MQTT.js, uPlot, Leaflet from CDN with pinned versions. |
+| Dashboard | `dashboard/` | Static ES modules, no build. MQTT.js, uPlot and Leaflet vendored in `dashboard/vendor/` (pinned versions), so the page opens offline. |
 
 ## Dashboard data flow
 

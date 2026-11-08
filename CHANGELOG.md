@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dashboard libraries (MQTT.js 5.10.1, uPlot 1.6.31, Leaflet 1.9.4) are vendored in
+  `dashboard/vendor/` instead of loaded from a CDN, so the page opens without internet.
+- Map centers on the actual test site at La Salle Bajío.
+
 ## [0.1.0] - 2026-11-07
 
 MVP for the first field tests (La Salle Bajío, weekend of 2026-11-08).
