@@ -6,7 +6,7 @@
 import { G0 } from './vehicle.js';
 
 export const DEFAULTS = {
-  usage: { activeSpeedKmh: 3.0, maxGapS: 5.0 },
+  usage: { activeSpeedKmh: 3.0, maxGapS: 5.0, imuActivityG: 0.1, imuWindowS: 1.0 },
   events: {
     impactG: 2.0, impactRefractoryS: 0.3, impactSeverityG: [2.0, 3.0, 4.0],
     freefallG: 0.3, jumpMinAirtimeS: 0.1,
@@ -38,8 +38,10 @@ const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const n = s.le
 export class LiveAnalyzer {
   constructor(config = DEFAULTS) {
     this.cfg = config;
-    // usage
-    this.activeS = 0;
+    // usage: GPS while it has fixes, IMU vibration as a fallback when it does not
+    this.activeGpsS = 0;
+    this.activeImuS = 0;
+    this.accMs = 0; // running mean square of |a| (g²)
     this.distanceM = 0;
     this.lastGps = null; // {t, speed, lat, lon}
     // events
@@ -75,7 +77,7 @@ export class LiveAnalyzer {
     if (prev && speedKmh !== null) {
       const dt = t - prev.t;
       if (dt > 0 && dt <= maxGapS && speedKmh >= activeSpeedKmh) {
-        this.activeS += dt;
+        this.activeGpsS += dt;
         this.distanceM += haversine(prev.lat, prev.lon, lat, lon);
       }
     }
@@ -101,12 +103,26 @@ export class LiveAnalyzer {
     const alpha = dt > 0 ? dt / (e.smoothS + dt) : 1;
     this.longS += alpha * (s.long - this.longS);
     this.latS += alpha * (s.lat - this.latS);
+    this.imuActivity(t, dt, s);
     this.detectImpact(t, Math.abs(s.vert));
     this.detectJump(t, s.sf);
     this.brake = this.sustained(t, this.brake, -this.longS > e.hardBrakeG, -this.longS, e.hardBrakeMinS, 'hardBrake');
     this.corner = this.sustained(t, this.corner, Math.abs(this.latS) > e.hardCornerG, Math.abs(this.latS), e.hardCornerMinS, 'hardCorner');
     this.launchImu(t, dt, s);
     this.turnImu(t, s.yaw);
+  }
+
+  get activeS() {
+    return this.activeGpsS + this.activeImuS;
+  }
+
+  /** Without a recent GPS fix, count active time from vibration (1 s RMS of acceleration). */
+  imuActivity(t, dt, s) {
+    const u = this.cfg.usage;
+    const w = dt > 0 ? dt / (u.imuWindowS + dt) : 1;
+    this.accMs += w * (s.long ** 2 + s.lat ** 2 + s.vert ** 2 - this.accMs);
+    const gpsCovered = this.lastGps !== null && t - this.lastGps.t <= u.maxGapS;
+    if (!gpsCovered && dt > 0 && Math.sqrt(this.accMs) > u.imuActivityG) this.activeImuS += dt;
   }
 
   record(type, ev) {
@@ -298,6 +314,8 @@ export class LiveAnalyzer {
   snapshot() {
     return {
       activeS: this.activeS,
+      activeGpsS: this.activeGpsS,
+      activeImuS: this.activeImuS,
       distanceM: this.distanceM,
       counts: { ...this.counts },
       impactBins: [...this.impactBins],

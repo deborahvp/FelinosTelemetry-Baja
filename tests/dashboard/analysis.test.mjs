@@ -31,6 +31,22 @@ test('usage: active time and distance only while moving', () => {
   close(an.distanceM, 100, 0.5);
 });
 
+test('usage: without GPS, vibration above 0.1 g RMS counts as active time (IMU fallback)', () => {
+  const an = new LiveAnalyzer();
+  // 10 s stopped (0.03 g noise), 20 s driving (0.2 g vibration), no GPS at all
+  run(an, 0, 30, (t) => ({ ...REST, vert: (t < 10 ? 0.03 : 0.2) * Math.sin(t * 60) * Math.SQRT2 }));
+  close(an.activeImuS, 20, 1.5);
+  assert.equal(an.activeGpsS, 0);
+  close(an.activeS, an.activeImuS, 1e-12);
+});
+
+test('usage: with GPS coverage the IMU fallback does not double count', () => {
+  const an = new LiveAnalyzer();
+  run(an, 0, 20, (t) => ({ ...REST, vert: 0.2 * Math.sin(t * 60) * Math.SQRT2 }), () => [20, 21, -101]);
+  assert.equal(an.activeImuS, 0);
+  close(an.activeGpsS, 20, 1e-9);
+});
+
 test('usage: GPS gaps longer than max_gap are not counted', () => {
   const an = new LiveAnalyzer();
   an.gps(0, 20, 21, -101);
@@ -136,5 +152,5 @@ test('snapshot is a plain copy', () => {
   const s = an.snapshot();
   s.counts.impact = 99;
   assert.equal(an.counts.impact, 0);
-  assert.deepEqual(Object.keys(s), ['activeS', 'distanceM', 'counts', 'impactBins', 'attempts', 'turns']);
+  assert.deepEqual(Object.keys(s), ['activeS', 'activeGpsS', 'activeImuS', 'distanceM', 'counts', 'impactBins', 'attempts', 'turns']);
 });

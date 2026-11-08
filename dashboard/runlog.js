@@ -58,6 +58,8 @@ export function mergeAnalysis(stored, live) {
   for (const [k, v] of Object.entries(live.counts ?? {})) counts[k] = Math.max(counts[k] ?? 0, v);
   return {
     activeS: Math.max(stored.activeS ?? 0, live.activeS ?? 0),
+    activeGpsS: Math.max(stored.activeGpsS ?? 0, live.activeGpsS ?? 0),
+    activeImuS: Math.max(stored.activeImuS ?? 0, live.activeImuS ?? 0),
     distanceM: Math.max(stored.distanceM ?? 0, live.distanceM ?? 0),
     counts,
     impactBins: (live.impactBins ?? []).map((v, i) => Math.max(v, stored.impactBins?.[i] ?? 0)),

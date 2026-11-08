@@ -5,6 +5,8 @@
 usage:
   active_speed_kmh: 3.0       # moving faster than this counts as active time
   max_gap_s: 5.0              # GPS gaps longer than this are not counted (signal loss)
+  imu_activity_g: 0.1         # without GPS: active if the 1 s RMS of acceleration exceeds this
+  imu_window_s: 1.0           # (moving ≈ 0.2 g, stopped ≈ 0.05 g in the first real recording)
 
 events:
   impact_g: 2.0               # |vertical acceleration, gravity removed| above this = impact

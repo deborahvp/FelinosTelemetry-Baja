@@ -174,3 +174,65 @@ def load_vehicle_config(path: Path) -> VehicleConfig:
 
 def load_requirements(path: Path) -> list[Requirement]:
     return [Requirement.model_validate(item) for item in _load_yaml(path) or []]
+
+
+# --------------------------------------------------------------------------- analysis config
+
+
+class UsageConfig(_Model):
+    active_speed_kmh: float = 3.0
+    max_gap_s: float = 5.0
+    imu_activity_g: float = 0.1
+    imu_window_s: float = 1.0
+
+
+class EventsConfig(_Model):
+    impact_g: float = 2.0
+    impact_refractory_s: float = 0.3
+    impact_severity_g: list[float] = Field(default_factory=lambda: [2.0, 3.0, 4.0])
+    freefall_g: float = 0.3
+    jump_min_airtime_s: float = 0.1
+    hard_brake_g: float = 0.5
+    hard_brake_min_s: float = 0.2
+    hard_corner_g: float = 0.5
+    hard_corner_min_s: float = 0.3
+    smooth_s: float = 0.1
+
+
+class AccelerationConfig(_Model):
+    rest_speed_kmh: float = 1.0
+    rest_min_s: float = 1.0
+    launch_g: float = 0.1
+    launch_min_s: float = 0.1
+    distances_m: list[float] = Field(default_factory=lambda: [30.48, 45.72])
+    timeout_s: float = 60.0
+    gps_blend: float = 0.5
+
+
+class TurningConfig(_Model):
+    window_s: float = 2.0
+    min_yaw_deg_s: float = 10.0
+    max_yaw_cv: float = 0.15
+    speed_kmh: list[float] = Field(default_factory=lambda: [3.0, 15.0])
+    max_speed_cv: float = 0.15
+
+
+class DurabilityConfig(_Model):
+    target_hours: float = 80.0
+    rainflow_channel: Literal["a_vert", "a_long", "a_lat"] = "a_vert"
+    wohler_m: list[float] = Field(default_factory=lambda: [3.0, 5.0])
+    reference_damage_per_hour: float | None = Field(None, gt=0)
+
+
+class AnalysisConfig(_Model):
+    """``config/analysis.yaml`` — thresholds shared with the live dashboard."""
+
+    usage: UsageConfig = Field(default_factory=UsageConfig)
+    events: EventsConfig = Field(default_factory=EventsConfig)
+    acceleration: AccelerationConfig = Field(default_factory=AccelerationConfig)
+    turning: TurningConfig = Field(default_factory=TurningConfig)
+    durability: DurabilityConfig = Field(default_factory=DurabilityConfig)
+
+
+def load_analysis_config(path: Path) -> AnalysisConfig:
+    return AnalysisConfig.model_validate(_load_yaml(path) or {})
