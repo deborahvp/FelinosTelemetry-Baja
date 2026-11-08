@@ -1,0 +1,101 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { RunLog, folderName, nextRunId, slug, toCsv, toMetaYaml } from '../../dashboard/runlog.js';
+
+const memory = (initial = null) => {
+  let data = initial;
+  return { load: () => data, save: (v) => { data = JSON.parse(JSON.stringify(v)); }, peek: () => data };
+};
+const HEADER = { run: 'R01', test: 'acceleration', suspension: 'susp-A', cvt: 'cvt-1', driver: 'Ana', place: 'La Salle Bajío' };
+
+test('nextRunId', () => {
+  assert.equal(nextRunId('R01'), 'R02');
+  assert.equal(nextRunId('R09'), 'R10');
+  assert.equal(nextRunId('R99'), 'R100');
+  assert.equal(nextRunId('x'), 'R01');
+});
+
+test('first recording uses the header run ID; the next one auto-increments', () => {
+  const store = memory();
+  const log = new RunLog(store);
+  const a = log.startSession('S1', HEADER, { startedAt: 1000 });
+  assert.equal(a.entry.run, 'R01');
+  const b = log.startSession('S2', a.header, { startedAt: 2000 });
+  assert.equal(b.entry.run, 'R02');
+  assert.equal(b.entry.test, 'acceleration'); // keeps test type and configuration
+  assert.equal(b.header.run, 'R02');
+  assert.equal(store.peek().length, 2); // persisted
+});
+
+test('reloading during a recording resumes its entry', () => {
+  const log = new RunLog(memory());
+  log.startSession('S1', HEADER);
+  const again = log.startSession('S1', { ...HEADER, run: 'R07' });
+  assert.equal(again.entry.run, 'R01');
+  assert.equal(again.header.run, 'R01');
+  assert.equal(log.entries.length, 1);
+});
+
+test('a manually chosen free run ID is kept', () => {
+  const log = new RunLog(memory());
+  log.startSession('S1', HEADER);
+  const b = log.startSession('S2', { ...HEADER, run: 'R10', test: 'turning' });
+  assert.equal(b.entry.run, 'R10');
+  assert.equal(b.entry.test, 'turning');
+  assert.equal(log.startSession('S3', b.header).entry.run, 'R11');
+});
+
+test('relabel, stats and clear', () => {
+  const store = memory();
+  const log = new RunLog(store);
+  log.startSession('S1', HEADER, { startedAt: 1_000_000 });
+  log.relabel('S1', { ...HEADER, test: 'climb', driver: 'Luis' });
+  log.updateStats('S1', { lastSampleAt: 1_042_400, maxSpeed: 31.25, maxAlong: 0.52, maxAlat: 0.61, deviceId: 'dev' });
+  const e = log.find('S1');
+  assert.equal(e.test, 'climb');
+  assert.equal(e.deviceId, 'dev');
+  assert.equal(e.maxSpeed, 31.25);
+  assert.equal(e.duration, 42.4);
+  // After a page reload mid-recording the dashboard sees smaller maxima: they must not shrink.
+  log.updateStats('S1', { lastSampleAt: 1_050_000, maxSpeed: 10, maxAlong: 0.9, maxAlat: 0.1 });
+  assert.equal(e.duration, 50);
+  assert.equal(e.maxSpeed, 31.25);
+  assert.equal(e.maxAlong, 0.9);
+  assert.equal(e.maxAlat, 0.61);
+  log.relabel('nope', HEADER); // ignored
+  log.clear();
+  assert.deepEqual(store.peek(), []);
+});
+
+test('survives corrupt storage', () => {
+  assert.deepEqual(new RunLog(memory('garbage')).entries, []);
+});
+
+test('folder name and slug follow the field guide', () => {
+  assert.equal(folderName({ run: 'R01', test: 'acceleration', suspension: 'susp A', cvt: 'cvt-1' }), 'R01_acceleration_susp-A_cvt-1');
+  assert.equal(folderName({ run: 'R02', test: 'free', suspension: '', cvt: '' }), 'R02_free');
+  assert.equal(slug('La Salle Bajío — Ingenierías'), 'la-salle-bajio-ingenierias');
+});
+
+test('meta.yaml contains the run details and requirement IDs', () => {
+  const log = new RunLog(memory());
+  const { entry } = log.startSession('c886864a', HEADER, { startedAt: new Date(2026, 10, 8, 10, 30).getTime() });
+  log.updateStats('c886864a', { lastSampleAt: entry.startedAt + 12_000, maxSpeed: 40, maxAlong: 0.5, maxAlat: 0.2 });
+  const yaml = toMetaYaml(entry, { axisMap: { x: 'longitudinal', y: 'vertical', z: 'lateral' } });
+  assert.match(yaml, /^date: 2026-11-08$/m);
+  assert.match(yaml, /^run_id: "R01"$/m);
+  assert.match(yaml, /^session_id: "2026-11-08_la-salle-bajio"$/m);
+  assert.match(yaml, /^sensorlogger_session_id: "c886864a"$/m);
+  assert.match(yaml, /^requirement_ids: \[VG-04\]$/m);
+  assert.match(yaml, /axis_map: \{x: "longitudinal", y: "vertical", z: "lateral"\}/);
+  assert.match(yaml, /duration 12 s; max speed 40\.0 km\/h/);
+});
+
+test('CSV export quotes fields that need it', () => {
+  const log = new RunLog(memory());
+  log.startSession('S1', { ...HEADER, driver: 'Pérez, Ana' }, { startedAt: new Date(2026, 10, 8, 9, 5, 7).getTime() });
+  const csv = toCsv(log.entries).split('\n');
+  assert.equal(csv[0].split(',')[0], 'run');
+  assert.match(csv[1], /^R01,acceleration,susp-A,cvt-1,"Pérez, Ana",La Salle Bajío,2026-11-08 09:05:07,0,0\.0,0\.00,0\.00,S1,,R01_acceleration_susp-A_cvt-1$/);
+});

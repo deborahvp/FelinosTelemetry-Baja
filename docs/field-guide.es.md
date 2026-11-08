@@ -44,15 +44,19 @@ El signo de "lateral" no importa (se calcula solo). El de **longitudinal sí**. 
 
 ## 4. En cada corrida
 
+**Regla: una grabación de Sensor Logger = una corrida.** Detener la grabación cierra la corrida; iniciar otra abre la siguiente. El dashboard le asigna el siguiente ID solo (R01 → R02) y la agrega a la **Bitácora de corridas** (abajo en el dashboard).
+
 | Paso | Quién | Qué |
 | --- | --- | --- |
-| 1 | Datos | Llenar `meta.yaml` de la corrida (ID `R01`, `R02`…, tipo de prueba, piloto, configuración, presión de llantas). |
-| 2 | Piloto | **Iniciar grabación** en Sensor Logger. |
+| 1 | Datos | Antes de grabar: en el dashboard, clic en "Corrida …" (arriba a la derecha) y revisar tipo de prueba, suspensión, CVT y piloto. El ID se pone solo. |
+| 2 | Piloto | **Iniciar grabación** en Sensor Logger. En la bitácora aparece la corrida con la marca **EN VIVO**. |
 | 3 | Piloto | Carro **detenido 5 s** en plano (sirve para nivelar ejes y quitar bias). |
 | 4 | Datos | En el dashboard confirmar: datos llegando, "Último mensaje" < 2 s, "Sin huecos". |
 | 5 | Piloto | Hacer la prueba. |
 | 6 | Piloto | Al terminar, **5 s detenido** y **detener grabación**. |
-| 7 | Datos | Anotar hora, observaciones y cualquier incidente en `notes`. |
+| 7 | Datos | En la bitácora, botón **meta.yaml** de esa corrida → se descarga ya llenado. Completar presión de llantas, clima y observaciones (`notes`). |
+
+Si te equivocaste de etiqueta durante la grabación, edítala en "Corrida …": se corrige la corrida actual. Al final del día usa **Exportar CSV** para guardar la bitácora completa.
 
 Pruebas sugeridas para esta primera salida (también sirven para calibrar umbrales en v0.2):
 
@@ -67,7 +71,7 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 
    ```
    data/2026-11-08/R01_acceleration_susp-A_cvt-1/
-     meta.yaml
+     meta.yaml          ← el descargado de la bitácora, renombrado a meta.yaml
      sensorlogger.zip
      stream.ndjson      ← copiar de data/stream/<sessionId>.ndjson
    ```

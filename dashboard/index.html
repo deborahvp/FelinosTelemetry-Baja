@@ -94,6 +94,26 @@
       </div>
     </div>
   </section>
+
+  <section class="card runlog">
+    <div class="chead">
+      <div><h3 class="big" data-i18n="runLog">Run log</h3><div class="sub" data-i18n="runLogSub">Each new recording in Sensor Logger is a new run. Download its meta.yaml for the run folder.</div></div>
+      <div class="actions">
+        <button class="small-btn" id="exportCsv" data-i18n="exportCsv">Export CSV</button>
+        <button class="small-btn" id="clearLog" data-i18n="clearLog">Clear log</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="colRun">Run</th><th data-i18n="testType">Test type</th><th data-i18n="colConfig">Configuration</th><th data-i18n="driver">Driver</th>
+          <th data-i18n="colStart">Start</th><th class="r" data-i18n="colDuration">Duration</th><th class="r" data-i18n="colMaxSpeed">Max speed</th><th class="r" data-i18n="colMaxG">Max g (long / lat)</th><th></th>
+        </tr></thead>
+        <tbody id="runRows"></tbody>
+      </table>
+      <div class="empty" id="runEmpty" data-i18n="noRuns">No runs yet. Start a recording in Sensor Logger.</div>
+    </div>
+  </section>
 </main>
 
 <dialog id="runDialog">
@@ -115,7 +135,11 @@
       <label><span data-i18n="suspension">Suspension</span><input name="suspension"></label>
       <label><span data-i18n="cvt">CVT</span><input name="cvt"></label>
     </div>
-    <label><span data-i18n="place">Place</span><input name="place"></label>
+    <div class="row">
+      <label><span data-i18n="driver">Driver</span><input name="driver"></label>
+      <label><span data-i18n="place">Place</span><input name="place"></label>
+    </div>
+    <p class="hint-text" data-i18n="runDialogHint">Changes apply to the current recording. The next recording gets the next run ID automatically.</p>
     <menu>
       <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
       <button value="save" class="primary" data-i18n="save">Save</button>

@@ -34,6 +34,7 @@ export function play(records, onMessage, { speed = 1, loop = true } = {}) {
     if (!records.length) return;
     const wallStart = Date.now();
     const recStart = records[0].receivedAt;
+    // One constant shift keeps sample times monotonic; latency is only meaningful at speed 1.
     const offsetNs = (wallStart - recStart) * 1e6;
     const suffix = round ? `-loop${round}` : '';
     let i = 0;

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "dashboard",
-      "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "http.server", "8000", "--bind", "127.0.0.1", "--directory", "dashboard"],
+      "runtimeExecutable": ".venv/Scripts/felinos.exe",
+      "runtimeArgs": ["dashboard", "--port", "8000", "--no-open"],
       "port": 8000
     }
   ]

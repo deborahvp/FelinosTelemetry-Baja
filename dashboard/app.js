@@ -6,6 +6,7 @@ import { pickLanguage, translate } from './i18n.js';
 import { TrackMap } from './map.js';
 import { connectLive } from './mqtt.js';
 import { parseNdjson, play } from './replay.js';
+import { RunLog, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
 import { Store } from './state.js';
 
 const DEFAULTS = {
@@ -46,6 +47,15 @@ function clock(seconds) {
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+function download(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function loadConfig() {
   try {
     const mod = await import('./config.js');
@@ -59,6 +69,7 @@ async function loadConfig() {
 // ---- app ------------------------------------------------------------------------------
 const { found, cfg } = await loadConfig();
 const demoUrl = params.get('demo');
+const demoSpeed = demoUrl ? Number(params.get('speed')) || 1 : 1; // latency is meaningless when sped up
 let conn = demoUrl ? 'demo' : found && cfg.mqtt.url ? 'connecting' : 'noConfig';
 let dirty = true;
 
@@ -67,12 +78,24 @@ const store = new Store({
   loadLevel: (device) => store_.get(`felinos.level.${device}`),
   saveLevel: (device, g) => store_.set(`felinos.level.${device}`, g),
 });
+let run = { run: 'R01', test: 'acceleration', suspension: 'susp-A', cvt: 'cvt-1', driver: '', place: cfg.placeName, ...store_.get('felinos.run', {}) };
+const runLog = new RunLog({ load: () => store_.get('felinos.runs', []), save: (entries) => store_.set('felinos.runs', entries) });
+let runLogDirty = true;
+
 store.onChange((session, isNew) => {
-  if (isNew) map.reset();
+  if (isNew) {
+    map.reset();
+    // A new recording in Sensor Logger = a new run in the log.
+    const started = runLog.startSession(session.id, run, {
+      deviceId: session.deviceId,
+      startedAt: session.t0 ? session.t0 * 1000 : Date.now(),
+    });
+    run = started.header;
+    store_.set('felinos.run', run);
+    runLogDirty = true;
+  }
   dirty = true;
 });
-
-let run = { run: 'R01', test: 'acceleration', suspension: 'susp-A', cvt: 'cvt-1', place: cfg.placeName, ...store_.get('felinos.run', {}) };
 
 // theme
 document.documentElement.dataset.theme = store_.get('felinos.theme', 'light') === 'dark' ? 'dark' : 'light';
@@ -130,6 +153,49 @@ function renderData() {
     $('mapCoords').hidden = false;
     $('mapCoords').textContent = `${Math.abs(lat).toFixed(4)}° ${t(lat >= 0 ? 'dirN' : 'dirS')}, ${Math.abs(lon).toFixed(4)}° ${t(lon >= 0 ? 'dirE' : 'dirW')}`;
   }
+
+  runLog.updateStats(s.id, { lastSampleAt: s.tLast * 1000, maxSpeed: s.max.speed, maxAlong: s.max.along, maxAlat: s.max.alat, deviceId: s.deviceId });
+  runLogDirty = true;
+}
+
+function renderRunLog() {
+  const current = store.session?.id;
+  const rows = [...runLog.entries].reverse().map((e) => {
+    const tr = document.createElement('tr');
+    if (e.sessionId === current) tr.className = 'current';
+    const d = new Date(e.startedAt);
+    const start = `${localDate(e.startedAt)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const cells = [
+      [e.run, ''],
+      [t(`t_${e.test}`), ''],
+      [[e.suspension, e.cvt].filter(Boolean).join(' · ') || '—', ''],
+      [e.driver || '—', ''],
+      [start, ''],
+      [clock(e.duration), 'r'],
+      [`${fmtNum(e.maxSpeed, 1)} km/h`, 'r'],
+      [`${fmtNum(e.maxAlong, 2)} / ${fmtNum(e.maxAlat, 2)}`, 'r'],
+    ];
+    cells.forEach(([text, cls], i) => {
+      const td = document.createElement('td');
+      if (cls) td.className = cls;
+      if (i === 0) {
+        td.appendChild(Object.assign(document.createElement('b'), { textContent: text }));
+        if (e.sessionId === current) td.appendChild(Object.assign(document.createElement('span'), { className: 'live-tag', textContent: t('liveNow') }));
+      } else {
+        td.textContent = text;
+      }
+      tr.appendChild(td);
+    });
+    const td = document.createElement('td');
+    td.className = 'r';
+    const btn = Object.assign(document.createElement('button'), { className: 'small-btn', textContent: 'meta.yaml', title: `${folderName(e)}/meta.yaml` });
+    btn.onclick = () => download(`${folderName(e)}.meta.yaml`, toMetaYaml(e, { axisMap: cfg.axisMap }), 'text/yaml');
+    td.appendChild(btn);
+    tr.appendChild(td);
+    return tr;
+  });
+  $('runRows').replaceChildren(...rows);
+  $('runEmpty').hidden = rows.length > 0;
 }
 
 function renderStatus() {
@@ -176,7 +242,8 @@ function renderStatus() {
   $('kAge').textContent = fmtNum(age, 1);
   $('kTime').textContent = clock(s.duration);
   $('kRec').textContent = age !== null && age < 5 ? t('recording') : t('stale');
-  $('kLatency').textContent = s.latencyS !== null && Number.isFinite(s.latencyS) ? t('latency', { s: s.latencyS.toFixed(1) }) : '';
+  const latencyValid = s.latencyS !== null && Number.isFinite(s.latencyS) && demoSpeed === 1;
+  $('kLatency').textContent = latencyValid ? t('latency', { s: s.latencyS.toFixed(1) }) : '';
   if (s.missing === 0) setStatus($('kGaps'), age !== null && age > 5 ? 'warn' : 'good', age !== null && age > 5 ? t('stale') : t('noGaps'));
   else setStatus($('kGaps'), 'warn', t('missingMsgs', { n: s.missing }));
 
@@ -206,6 +273,7 @@ function applyLang() {
   map.relabel();
   Object.values(charts).forEach((c) => c.redraw());
   dirty = true;
+  runLogDirty = true;
   renderStatus();
 }
 
@@ -238,16 +306,26 @@ $('runMeta').onclick = () => {
 };
 dialog.addEventListener('close', () => {
   if (dialog.returnValue !== 'save') return;
-  run = Object.fromEntries(['run', 'test', 'suspension', 'cvt', 'place'].map((k) => [k, form.elements[k].value.trim()]));
+  run = Object.fromEntries(['run', 'test', 'suspension', 'cvt', 'driver', 'place'].map((k) => [k, form.elements[k].value.trim()]));
   store_.set('felinos.run', run);
+  if (store.session) runLog.relabel(store.session.id, run); // fix the label of the current recording
+  runLogDirty = true;
   renderStatus();
 });
+$('exportCsv').onclick = () => {
+  download(`felinos-run-log_${localDate(Date.now())}.csv`, toCsv(runLog.entries), 'text/csv');
+};
+$('clearLog').onclick = () => {
+  if (!runLog.entries.length || !window.confirm(t('clearLogConfirm'))) return;
+  runLog.clear();
+  runLogDirty = true;
+};
 
 // ---- data source ----------------------------------------------------------------------
 if (demoUrl) {
   const res = await fetch(demoUrl);
   const records = parseNdjson(await res.text());
-  play(records, (m) => store.handle(m), { speed: Number(params.get('speed')) || 1 });
+  play(records, (m) => store.handle(m), { speed: demoSpeed });
 } else if (conn === 'connecting') {
   connectLive(cfg.mqtt, {
     onMessage: (m) => store.handle(m),
@@ -260,3 +338,7 @@ setInterval(() => {
   if (dirty) { renderData(); dirty = false; }
   renderStatus();
 }, 250);
+setInterval(() => {
+  if (runLogDirty) { renderRunLog(); runLogDirty = false; }
+}, 1000);
+setInterval(() => runLog.save(), 5000); // persist live stats

@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard libraries (MQTT.js 5.10.1, uPlot 1.6.31, Leaflet 1.9.4) are vendored in
   `dashboard/vendor/` instead of loaded from a CDN, so the page opens without internet.
 - Map centers on the actual test site at La Salle Bajío.
+- `felinos dashboard` sends `Cache-Control: no-cache` so updated code is picked up after `git pull`.
+
+### Added
+
+- Run log in the dashboard: each new Sensor Logger recording becomes a new run with the next
+  run ID (R01 → R02), keeping test type and configuration. Table with duration and maxima,
+  per-run `meta.yaml` download (validated against `RunMeta`) and CSV export. Driver field in
+  the run dialog.
 
 ## [0.1.0] - 2026-11-07
 

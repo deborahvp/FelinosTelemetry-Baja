@@ -155,16 +155,15 @@ def dashboard(
     open_browser: Annotated[bool, typer.Option("--open/--no-open")] = True,
 ) -> None:
     """Serve the dashboard locally (ES modules do not load from file://)."""
-    import functools
-    import http.server
     import webbrowser
+
+    from felinos_telemetry.serve import make_server
 
     folder = directory or Path(__file__).resolve().parents[2] / "dashboard"
     if not (folder / "index.html").exists():
         typer.secho(f"Error: no index.html in {folder}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(folder))
-    with http.server.ThreadingHTTPServer(("127.0.0.1", port), handler) as httpd:
+    with make_server(folder, port) as httpd:
         url = f"http://localhost:{port}/"
         typer.echo(f"Dashboard at {url}  (Ctrl+C to stop)")
         if open_browser:
