@@ -88,7 +88,7 @@ class AxisMap(_Model):
 
 
 class Device(_Model):
-    model: str = "Galaxy Note 10"
+    model: str = "iPhone 15"
     mounting: str = ""
     axis_map: AxisMap = Field(
         default_factory=lambda: AxisMap(x="lateral", y="longitudinal", z="vertical")

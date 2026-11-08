@@ -8,6 +8,7 @@ import { connectLive, isBrokerUrl, resolveConnection } from './mqtt.js';
 import { parseNdjson, play } from './replay.js';
 import { RunLog, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
 import { Store } from './state.js';
+import { matchPreset, parseAxisMap, presetAxisMap } from './vehicle.js';
 
 const DEFAULTS = {
   mqtt: { url: '', username: '', password: '', topic: 'felinos/#' },
@@ -76,8 +77,15 @@ const connection = resolveConnection(store_.get('felinos.conn'), found ? cfg.mqt
 let conn = demoUrl ? 'demo' : connection.source !== 'none' ? 'connecting' : 'noConfig';
 let dirty = true;
 
+// Mounting chosen in the Mount dialog (this browser) wins over config.js.
+let axisMap = cfg.axisMap;
+try {
+  const saved = store_.get('felinos.axisMap');
+  if (saved) { parseAxisMap(saved); axisMap = saved; }
+} catch { /* ignore an invalid saved map */ }
+
 const store = new Store({
-  axisMap: cfg.axisMap,
+  axisMap,
   loadLevel: (device) => store_.get(`felinos.level.${device}`),
   saveLevel: (device, g) => store_.set(`felinos.level.${device}`, g),
 });
@@ -192,7 +200,7 @@ function renderRunLog() {
     const td = document.createElement('td');
     td.className = 'r';
     const btn = Object.assign(document.createElement('button'), { className: 'small-btn', textContent: 'meta.yaml', title: `${folderName(e)}/meta.yaml` });
-    btn.onclick = () => download(`${folderName(e)}.meta.yaml`, toMetaYaml(e, { axisMap: cfg.axisMap }), 'text/yaml');
+    btn.onclick = () => download(`${folderName(e)}.meta.yaml`, toMetaYaml(e, { axisMap }), 'text/yaml');
     td.appendChild(btn);
     tr.appendChild(td);
     return tr;
@@ -297,14 +305,40 @@ $('themeBtn').onclick = () => {
   map.redraw(store.session?.gps);
   dirty = true;
 };
-$('levelBtn').onclick = () => {
-  if (!store.session) return;
-  store.session.relevel(2);
+function showLeveling() {
   const btn = $('levelBtn');
   btn.textContent = t('leveling');
   btn.disabled = true;
   setTimeout(() => { btn.textContent = t('setLevel'); btn.disabled = false; }, 2500);
+}
+$('levelBtn').onclick = () => {
+  if (!store.session) return;
+  store.session.relevel(2);
+  showLeveling();
 };
+
+// Mount dialog: change how the phone is mounted without editing files (works on a hosted copy).
+const mountDialog = $('mountDialog');
+const mountForm = $('mountForm');
+$('mountBtn').onclick = () => {
+  const match = matchPreset(axisMap);
+  $('mountCustomRow').hidden = Boolean(match);
+  $('mountCustomMap').textContent = match ? '' : JSON.stringify(axisMap);
+  mountForm.elements.preset.value = match ? match.preset : 'custom';
+  mountForm.elements.invert.checked = match ? match.invertForward : false;
+  mountDialog.showModal();
+};
+mountDialog.addEventListener('close', () => {
+  if (mountDialog.returnValue !== 'save') return;
+  const preset = mountForm.elements.preset.value;
+  const invert = mountForm.elements.invert.checked;
+  const next = preset === 'custom' ? cfg.axisMap : presetAxisMap(preset, invert);
+  axisMap = next;
+  store_.set('felinos.axisMap', next);
+  store.setAxisMap(next); // re-levels the current session over the next 2 s
+  if (store.session) showLeveling();
+  dirty = true;
+});
 const dialog = $('runDialog');
 const form = $('runForm');
 $('runMeta').onclick = () => {

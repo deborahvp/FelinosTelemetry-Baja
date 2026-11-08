@@ -17,21 +17,29 @@
 
 ## 2. Montaje del teléfono y ejes (`axisMap`)
 
-El teléfono debe ir **rígido** al chasis (sin vibrar suelto ni girar). Anotar la orientación en `meta.yaml` (`device.axis_map`) y en `dashboard/config.js` (`axisMap`) con **los mismos valores**.
+El teléfono debe ir **rígido** al chasis (sin vibrar suelto ni girar). Tomar una foto del montaje.
 
-Ejes del teléfono (Android): **x** hacia la derecha de la pantalla, **y** hacia arriba de la pantalla, **z** saliendo de la pantalla.
+> **Tranquilidad:** si el montaje queda mal configurado, **los datos no se pierden ni se dañan**. Solo se ve raro el dashboard en vivo; la grabación del teléfono guarda los ejes crudos y el análisis los orienta después.
 
-| Montaje | `axisMap` |
+**Cómo configurarlo (sin computadora):** en el dashboard, botón **Montaje** (junto a "Nivelar") → elegir la posición → **Guardar** → carro detenido en plano 2 s (se nivela solo). Funciona desde cualquier celular que abra el dashboard (por ejemplo la versión de Vercel) y se guarda en ese navegador. Si cambias la posición del teléfono a último momento, solo repite esto.
+
+Ejes del teléfono (iPhone y Android igual): **x** hacia la derecha de la pantalla, **y** hacia arriba de la pantalla, **z** saliendo de la pantalla.
+
+| Montaje (opción en el dashboard) | `axisMap` equivalente |
 | --- | --- |
 | Acostado, pantalla arriba, parte de arriba del teléfono hacia el frente | `{x: 'lateral', y: 'longitudinal', z: 'vertical'}` |
 | Vertical en tubo, **pantalla hacia afuera del lado DERECHO** del carro | `{x: 'longitudinal', y: 'vertical', z: 'lateral'}` |
 | Vertical en tubo, **pantalla hacia afuera del lado IZQUIERDO** del carro | `{x: '-longitudinal', y: 'vertical', z: 'lateral'}` |
+| Vertical, pantalla hacia el piloto (hacia atrás) | `{x: 'lateral', y: 'vertical', z: '-longitudinal'}` |
+| Vertical, pantalla hacia el frente | `{x: 'lateral', y: 'vertical', z: 'longitudinal'}` |
 
-El signo de "lateral" no importa (se calcula solo). El de **longitudinal sí**. Prueba de 30 s:
+"Vertical" = el teléfono parado con la parte de arriba hacia el cielo. Si va de cabeza o de lado, elegir la opción más parecida y hacer la prueba de 30 s:
 
-1. Carro detenido en piso plano → botón **Nivelar / Set level** en el dashboard (espera 2 s).
+1. Carro detenido en piso plano → **Nivelar** (espera 2 s).
 2. Empujar o acelerar suave hacia adelante → **a longitudinal debe ser positiva** y en el G-G el punto debe subir hacia "Acelera".
-3. Si sale negativa: cambiar el signo de `longitudinal` en `config.js` (y en `meta.yaml`) y recargar.
+3. Si sale negativa: **Montaje** → marcar **Invertir el frente** → Guardar.
+
+El dashboard detecta solo si el teléfono es iPhone o Android (signos y unidades distintos); no hay que configurar nada por eso. Anotar la opción elegida en `notes` del `meta.yaml`.
 
 ## 3. Al llegar a la pista
 

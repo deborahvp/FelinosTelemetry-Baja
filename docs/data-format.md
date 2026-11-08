@@ -32,7 +32,12 @@ Names are the lowercase streaming names. CSV files are mapped to the same names
 | `battery` | batteryLevel, batteryState | 0–1 (or %) | To confirm on Android |
 | `*uncalibrated` | x, y, z | as calibrated | |
 
-Phone axes (Android): x → right edge of the screen, y → top edge, z → out of the screen.
+Phone axes (Android and iOS): x → right edge of the screen, y → top edge, z → out of the screen.
+
+Platform conventions differ: Android reports gravity pointing **up** and linear acceleration in
+the direction of motion, in m/s²; raw iOS (Core Motion) reports gravity pointing **down**, linear
+acceleration with the opposite sign, and may use g instead of m/s². The dashboard detects both
+(gravity sign against the mounted vertical axis, gravity magnitude for units).
 
 ## MQTT message (confirmed with a real capture)
 

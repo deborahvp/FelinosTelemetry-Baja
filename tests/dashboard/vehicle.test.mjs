@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { G0, LevelReference, attitude, frameFromGravity, parseAxisMap, toVehicle } from '../../dashboard/vehicle.js';
+import { G0, LevelReference, MOUNT_PRESETS, accelToVehicle, attitude, frameFromGravity, matchPreset, parseAxisMap, presetAxisMap, toVehicle } from '../../dashboard/vehicle.js';
 
 const close = (a, b, tol = 1e-9) => assert.ok(Math.abs(a - b) <= tol, `${a} ≉ ${b}`);
 const DEFAULT = { x: 'lateral', y: 'longitudinal', z: 'vertical' };
@@ -75,6 +75,29 @@ test('field guide mounts: portrait on a tube, screen facing out', () => {
   const left = frameFromGravity([0, G0, 0], parseAxisMap({ x: '-longitudinal', y: 'vertical', z: 'lateral' }));
   close(toVehicle([-2, 0, 0], left).long, 2);
   close(toVehicle([0, 0, 1], left).lat, 1);
+});
+
+test('every mount preset yields a valid frame where forward reads positive', () => {
+  for (const preset of Object.keys(MOUNT_PRESETS)) {
+    const map = presetAxisMap(preset);
+    const axes = parseAxisMap(map);
+    // gravity (Android convention, up) along the mapped vertical axis
+    const frame = frameFromGravity(axes.vertical.map((v) => v * G0), axes);
+    assert.ok(frame, preset);
+    // physical forward acceleration = mapped longitudinal axis
+    close(accelToVehicle(axes.longitudinal.map((v) => v * 2), frame).long, 2);
+    const inv = parseAxisMap(presetAxisMap(preset, true));
+    assert.deepEqual(inv.longitudinal, axes.longitudinal.map((v) => -v || 0), preset);
+  }
+});
+
+test('matchPreset recognizes presets, inversions and ignores the lateral sign', () => {
+  assert.deepEqual(matchPreset({ x: 'lateral', y: 'longitudinal', z: 'vertical' }), { preset: 'flat', invertForward: false });
+  assert.deepEqual(matchPreset({ x: 'longitudinal', y: 'vertical', z: '-lateral' }), { preset: 'right', invertForward: false });
+  assert.deepEqual(matchPreset({ x: '-longitudinal', y: 'vertical', z: 'lateral' }).invertForward, false); // that is "left"
+  assert.deepEqual(matchPreset({ x: 'lateral', y: '-longitudinal', z: 'vertical' }), { preset: 'flat', invertForward: true });
+  assert.equal(matchPreset({ x: 'vertical', y: 'lateral', z: 'longitudinal' }), null);
+  assert.throws(() => presetAxisMap('roof'), /unknown/);
 });
 
 test('frameFromGravity returns null for degenerate input', () => {

@@ -5,7 +5,7 @@
 // points for the map, and running stats for the status panel. The full session stays in
 // memory so charts can be scrolled back.
 
-import { LevelReference, attitude, frameFromGravity, parseAxisMap, toDeg, toG, toKmh, toVehicle } from './vehicle.js';
+import { LevelReference, accelToVehicle, attitude, frameFromGravity, parseAxisMap, toDeg, toG, toKmh, toVehicle, unitScale } from './vehicle.js';
 
 export const PLOT_DT = 0.04; // 25 Hz for plotting only
 const BATTERY_WINDOW_S = 300;
@@ -82,6 +82,12 @@ export class Session {
     this.frame = null;
   }
 
+  /** The phone was mounted differently: new axis map, and re-level since the old reference no longer applies. */
+  setAxisMap(axisMap, spanSeconds = 2) {
+    this.axes = parseAxisMap(axisMap);
+    this.relevel(spanSeconds);
+  }
+
   ingest(message, receivedMs = Date.now()) {
     this.messages += 1;
     this.lastReceivedMs = receivedMs;
@@ -113,6 +119,7 @@ export class Session {
         const g = vec(v);
         if (!finite3(g)) return;
         this.gravity = g;
+        this.accelScale = unitScale(g); // iOS may report in g instead of m/s²
         const fixed = this.level.add(t, g);
         if (fixed) this.levelFixed = this.level.gravity;
         if (fixed || !this.frame) this.frame = frameFromGravity(this.level.current(), this.axes);
@@ -124,9 +131,10 @@ export class Session {
         return;
       }
       case 'accelerometer': {
-        const a = vec(v);
+        const k = this.accelScale ?? 1;
+        const a = vec(v).map((x) => x * k);
         if (!finite3(a) || !this.frame) return;
-        const av = toVehicle(a, this.frame);
+        const av = accelToVehicle(a, this.frame);
         const along = toG(av.long);
         const alat = toG(av.lat);
         const yaw = this.gyro ? toDeg(toVehicle(this.gyro, this.frame).vert) : 0;
@@ -215,6 +223,12 @@ export class Store {
     this.saveLevel = saveLevel;
     this.session = null;
     this.listeners = new Set();
+  }
+  /** Change the mounting live (Mount dialog). Throws on an invalid map. */
+  setAxisMap(axisMap) {
+    parseAxisMap(axisMap);
+    this.axisMap = axisMap;
+    if (this.session) this.session.setAxisMap(axisMap);
   }
   onChange(fn) {
     this.listeners.add(fn);

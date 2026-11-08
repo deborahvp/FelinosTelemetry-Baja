@@ -58,7 +58,8 @@
       <div class="card">
         <div class="chead"><div><h3 class="big" data-i18n="yawGrade">Yaw and grade</h3>
           <div class="legend big"><span><i style="background:var(--series-1)"></i><span data-i18n="yawRate">Yaw rate</span> <span id="nYaw" class="num">—</span> °/s</span><span><i style="background:var(--series-2)"></i><span data-i18n="grade">Grade</span> <span id="nGrade" class="num">—</span>°</span></div></div>
-          <button class="small-btn" id="levelBtn" data-i18n="setLevel" data-i18n-title="setLevelHint">Set level</button></div>
+          <div class="actions"><button class="small-btn" id="mountBtn" data-i18n="mount" data-i18n-title="mountTitle">Mount</button>
+          <button class="small-btn" id="levelBtn" data-i18n="setLevel" data-i18n-title="setLevelHint">Set level</button></div></div>
         <div class="chart" id="cYaw"></div>
       </div>
     </div>
@@ -140,6 +141,27 @@
       <label><span data-i18n="place">Place</span><input name="place"></label>
     </div>
     <p class="hint-text" data-i18n="runDialogHint">Changes apply to the current recording. The next recording gets the next run ID automatically.</p>
+    <menu>
+      <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
+      <button value="save" class="primary" data-i18n="save">Save</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="mountDialog">
+  <form method="dialog" id="mountForm">
+    <h2 data-i18n="mountTitle">Phone mounting</h2>
+    <p class="hint-text" data-i18n="mountAxes">Phone axes: x → right edge of the screen, y → top edge, z → out of the screen.</p>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="preset" value="flat"><span data-i18n="m_flat">Lying flat, screen up, top of the phone toward the front</span></label>
+      <label class="choice"><input type="radio" name="preset" value="right"><span data-i18n="m_right">Upright on a tube, screen facing out on the RIGHT side</span></label>
+      <label class="choice"><input type="radio" name="preset" value="left"><span data-i18n="m_left">Upright on a tube, screen facing out on the LEFT side</span></label>
+      <label class="choice"><input type="radio" name="preset" value="driver"><span data-i18n="m_driver">Upright, screen facing the driver (backward)</span></label>
+      <label class="choice"><input type="radio" name="preset" value="front"><span data-i18n="m_front">Upright, screen facing forward</span></label>
+      <label class="choice" id="mountCustomRow" hidden><input type="radio" name="preset" value="custom"><span><span data-i18n="m_custom">Custom (config.js)</span> <code id="mountCustomMap"></code></span></label>
+    </div>
+    <label class="check"><input type="checkbox" name="invert"><span data-i18n="invertForward">Invert forward (if accelerating shows a negative value)</span></label>
+    <p class="hint-text" data-i18n="mountHint">After saving, keep the vehicle stopped on flat ground for 2 s: it re-levels by itself. Saved in this browser only.</p>
     <menu>
       <button value="cancel" formnovalidate data-i18n="cancel">Cancel</button>
       <button value="save" class="primary" data-i18n="save">Save</button>

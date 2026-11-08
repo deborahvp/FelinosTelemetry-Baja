@@ -114,6 +114,36 @@ test('Store starts a new session on a new sessionId and persists the level', () 
   assert.equal(events.length, 3);
 });
 
+test('iPhone convention (gravity down, opposite sign, units in g) gives the same result', () => {
+  // Raw Core Motion: flat phone reads gravity (0,0,-1) g; accelerating forward (+y) at 0.5 g
+  // reads userAcceleration y = -0.5 g.
+  const s = new Session('S');
+  const payload = [];
+  for (let i = 0; i < 100; i += 1) {
+    const time = 1e18 + i * 1e7;
+    payload.push({ name: 'gravity', time, values: { x: 0, y: 0, z: -1 } });
+    payload.push({ name: 'gyroscope', time, values: { x: 0, y: 0, z: Math.PI / 18 } });
+    payload.push({ name: 'accelerometer', time, values: { x: 0, y: -0.5, z: 0 } });
+  }
+  s.ingest({ messageId: 1, payload }, 0);
+  close(s.now.along, 0.5, 1e-9);
+  close(s.now.alat, 0, 1e-9);
+  close(s.now.yaw, 10, 1e-9); // gyroscope convention is the same on both platforms
+  close(s.now.grade, 0, 1e-9);
+});
+
+test('setAxisMap changes the mounting live and re-levels', () => {
+  const store = new Store();
+  store.handle(synth({ seconds: 1, a: 0.5 * G0 }), 0);
+  close(store.session.now.along, 0.5, 1e-9);
+  // Phone turned 180° about vertical (top now points backward): same motion reads −y.
+  store.setAxisMap({ x: '-lateral', y: '-longitudinal', z: 'vertical' });
+  assert.equal(store.session.frame, null); // re-leveling
+  store.handle(synth({ id: 2, seconds: 3, a: 0.5 * G0 }), 0);
+  close(store.session.now.along, -0.5, 1e-9);
+  assert.throws(() => store.setAxisMap({ x: 'lateral', y: 'lateral', z: 'vertical' }), /twice/);
+});
+
 test('relevel discards the frame and rebuilds it', () => {
   const s = new Session('S');
   s.ingest(synth({ seconds: 1 }), 0);

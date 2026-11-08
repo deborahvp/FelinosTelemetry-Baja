@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard libraries (MQTT.js 5.10.1, uPlot 1.6.31, Leaflet 1.9.4) are vendored in
   `dashboard/vendor/` instead of loaded from a CDN, so the page opens without internet.
 - Map centers on the actual test area in León (21.0894, −101.6987).
+- iPhone support in the live view: sign and unit conventions are detected automatically
+  (gravity direction against the mounted vertical axis, gravity magnitude for g vs m/s²).
+  Default device model is now iPhone 15.
 - Optional online satellite basemap (Esri World Imagery, on by default, `satellite: false` to
   disable); the offline track image still works on top of it or alone.
 - `felinos dashboard` sends `Cache-Control: no-cache` so updated code is picked up after `git pull`.
@@ -25,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connection dialog (click the connection status): broker URL and read-only user saved per
   browser, overriding `config.js`, so the dashboard can be hosted (e.g. Vercel) with no
   credentials in its files. `dashboard/vercel.json` and a Spanish deploy guide.
+- Mount dialog: pick how the phone is mounted (5 presets + invert forward) from any browser,
+  applied live with automatic re-leveling, so a last-minute change needs no computer.
 
 ## [0.1.0] - 2026-11-07
 

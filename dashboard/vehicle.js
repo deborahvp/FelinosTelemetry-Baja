@@ -37,20 +37,78 @@ export function parseAxisMap(map) {
   return out;
 }
 
-/** Vehicle frame {f, l, u} in phone coordinates from a gravity sample. */
+/**
+ * Typical phone mounts (phone axes: x → right edge of the screen, y → top edge, z → out of the
+ * screen; same on Android and iOS). Lateral sign does not matter: it is derived from the other two.
+ */
+export const MOUNT_PRESETS = {
+  flat: { x: 'lateral', y: 'longitudinal', z: 'vertical' }, // lying flat, screen up, top toward the front
+  right: { x: 'longitudinal', y: 'vertical', z: 'lateral' }, // upright, screen facing out on the RIGHT side
+  left: { x: '-longitudinal', y: 'vertical', z: 'lateral' }, // upright, screen facing out on the LEFT side
+  driver: { x: 'lateral', y: 'vertical', z: '-longitudinal' }, // upright, screen facing the driver (backward)
+  front: { x: 'lateral', y: 'vertical', z: 'longitudinal' }, // upright, screen facing forward
+};
+
+/** Axis map for a preset, optionally with the forward direction inverted. */
+export function presetAxisMap(preset, invertForward = false) {
+  const base = MOUNT_PRESETS[preset];
+  if (!base) throw new Error(`unknown mount preset "${preset}"`);
+  if (!invertForward) return { ...base };
+  const flip = (v) => (v.replace(/^[+-]/, '') === 'longitudinal' ? (v.startsWith('-') ? 'longitudinal' : '-longitudinal') : v);
+  return { x: flip(base.x), y: flip(base.y), z: flip(base.z) };
+}
+
+/** Which preset (and inversion) an axis map corresponds to, or null for a custom map. */
+export function matchPreset(axisMap) {
+  const key = (m) => ['x', 'y', 'z'].map((k) => String(m?.[k] ?? '').trim().replace(/^\+/, '').replace(/^-lateral$/, 'lateral')).join(',');
+  // Plain presets first: "right" inverted is the same map as "left".
+  for (const invertForward of [false, true]) {
+    for (const preset of Object.keys(MOUNT_PRESETS)) {
+      if (key(presetAxisMap(preset, invertForward)) === key(axisMap)) return { preset, invertForward };
+    }
+  }
+  return null;
+}
+
+/**
+ * Vehicle frame {f, l, u, accelSign} in phone coordinates from a gravity sample.
+ *
+ * Platforms disagree on sign conventions: Android reports gravity pointing UP and linear
+ * acceleration in the direction of motion; raw iOS (Core Motion) reports gravity pointing DOWN
+ * and acceleration with the opposite sign. The mounted vertical axis (axisMap) tells which one
+ * we got: `accelSign` is −1 for the iOS convention, so acceleration is corrected, not just gravity.
+ */
 export function frameFromGravity(gravity, axes) {
   let u = unit(gravity);
   if (!u) return null;
-  // Sign-agnostic: Android reports gravity pointing up, other platforms may not.
-  if (dot(u, axes.vertical) < 0) u = scale(u, -1);
+  let accelSign = 1;
+  if (dot(u, axes.vertical) < 0) {
+    u = scale(u, -1);
+    accelSign = -1;
+  }
   const f = unit(sub(axes.longitudinal, scale(u, dot(axes.longitudinal, u))));
   if (!f) return null; // longitudinal axis is vertical: bad axisMap
-  return { f, l: cross(u, f), u };
+  return { f, l: cross(u, f), u, accelSign };
 }
 
 /** Project a phone-frame vector onto the vehicle frame. */
 export function toVehicle(v, frame) {
   return { long: dot(v, frame.f), lat: dot(v, frame.l), vert: dot(v, frame.u) };
+}
+
+/** Project a phone-frame linear acceleration, correcting the platform sign convention. */
+export function accelToVehicle(a, frame) {
+  const s = frame.accelSign ?? 1;
+  return toVehicle([a[0] * s, a[1] * s, a[2] * s], frame);
+}
+
+/**
+ * Factor to convert accelerometer/gravity readings to m/s²: iOS may report in g (|gravity| ≈ 1),
+ * Android in m/s² (|gravity| ≈ 9.8).
+ */
+export function unitScale(gravity) {
+  const n = norm(gravity);
+  return n > 0.3 && n < 3 ? G0 : 1;
 }
 
 /** Pitch (grade, nose up +) and roll (left side up −) in degrees from the current gravity. */

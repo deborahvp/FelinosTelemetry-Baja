@@ -198,6 +198,15 @@ dialog input, dialog select { font: inherit; font-size: 14px; padding: 7px 9px; 
 dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 dialog .hint-text { font-size: 12px; color: var(--text-3); margin: 0 0 10px; }
 dialog .hint-text.error { color: var(--critical); font-weight: 600; }
+dialog .choices { display: grid; gap: 6px; margin-bottom: 10px; }
+dialog label.choice, dialog label.check { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; font-weight: 500; color: var(--text);
+  font-size: 13px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; margin: 0; cursor: pointer; }
+dialog label.check { border: 0; padding: 4px 0; margin-bottom: 8px; }
+dialog label.choice:has(input:checked) { border-color: var(--series-1); background: var(--surface-2); }
+dialog label.choice[hidden] { display: none; }
+dialog input[type=radio], dialog input[type=checkbox] { margin-top: 2px; accent-color: var(--series-1); }
+dialog code { font-size: 11px; color: var(--text-3); }
+.chead .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 dialog .hint-text[hidden] { display: none; }
 .pill:focus-visible { outline: 2px solid var(--brand-on); outline-offset: 2px; }
 .banner.clickable { cursor: pointer; }

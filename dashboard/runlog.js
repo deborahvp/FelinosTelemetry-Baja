@@ -131,7 +131,7 @@ function pick(obj) {
 const yq = (s) => JSON.stringify(String(s ?? '')); // JSON strings are valid YAML scalars
 
 /** meta.yaml for one run, matching templates/meta.yaml (validated by RunMeta in Python). */
-export function toMetaYaml(entry, { vehicleId = 'felinos-2027', axisMap, deviceModel = 'Galaxy Note 10' } = {}) {
+export function toMetaYaml(entry, { vehicleId = 'felinos-2027', axisMap, deviceModel = 'iPhone 15' } = {}) {
   const date = localDate(entry.startedAt);
   const reqs = TEST_REQUIREMENTS[entry.test] ?? [];
   const ax = axisMap ?? { x: 'lateral', y: 'longitudinal', z: 'vertical' };

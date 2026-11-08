@@ -1,6 +1,6 @@
 # Configuración de Sensor Logger y HiveMQ Cloud — paso a paso
 
-> Guía para el equipo Felinos Racing. Imprimible. Versión de la app probada: Sensor Logger 1.68 (Android, Galaxy Note 10 / SM-N975F).
+> Guía para el equipo Felinos Racing. Imprimible. Formato de datos probado con Sensor Logger 1.68 (Android, Galaxy Note 10). Teléfono para las pruebas: **iPhone 15**.
 > Los nombres exactos de los menús pueden variar un poco entre versiones de la app.
 
 ## 1. Broker MQTT (HiveMQ Cloud, plan gratuito) — se hace una sola vez
@@ -61,8 +61,20 @@
 
 ### 2.4 Teléfono
 
+**iPhone (el que se usará en las pruebas, iPhone 15):**
+
+- **Modo de bajo consumo: apagado** (Ajustes → Batería).
+- **Bloqueo automático: Nunca** durante las pruebas (Ajustes → Pantalla y brillo), y dejar **Sensor Logger abierto en primer plano**: iOS puede pausar apps en segundo plano y cortar el streaming.
+- **Ubicación:** permitir a Sensor Logger y activar **Ubicación precisa** (Ajustes → Privacidad → Localización → Sensor Logger).
+- El dashboard detecta solo las convenciones de iPhone (signo y unidades de la aceleración); no hay que cambiar nada.
+- Verificar en la primera prueba que el sensor **Battery** aparezca y llegue al dashboard.
+
+**Android:**
+
 - Modo ahorro de batería: **apagado**. Excluir Sensor Logger de la optimización de batería.
 - Pantalla: tiempo de apagado largo o mantener encendida durante la corrida.
+
+**Ambos:**
 - Datos móviles encendidos (chip prepago). Consumo estimado con IMU a 100 Hz: **70–110 MB/h** — verificar en la primera prueba.
 - Batería cargada al 100 % y power bank en la caja de pits.
 
@@ -90,7 +102,7 @@ Sin internet / sin broker: `felinos simulate tests\fixtures\sample_export --out 
 
 ## 4. Pendientes por verificar en la primera prueba
 
-- [ ] El Note 10 (Android) tiene las mismas opciones de streaming que se vieron en iOS.
+- [ ] El export CSV del iPhone tiene las mismas columnas que el de Android (`felinos check` sobre el zip).
 - [ ] La app sustituye `${deviceId}` y `${sessionId}` en el topic.
 - [ ] Nombre de los campos del sensor Battery (el dashboard acepta `batteryLevel` 0–1 o 0–100).
 - [ ] Rango máximo del acelerómetro (¿se satura en aterrizajes?) y frecuencia máxima real.
