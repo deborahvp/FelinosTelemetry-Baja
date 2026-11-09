@@ -7,7 +7,7 @@ name = "felinos-telemetry"
 version = "0.1.0"
 description = "Vehicle data acquisition and verification pipeline for the Felinos Racing Baja SAE prototype."
 readme = "README.md"
-license = "MIT"
+license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
 authors = [{ name = "Deborah Villicaña Prieto", email = "deborahvillicana@outlook.com" }]
 requires-python = ">=3.11"
@@ -16,6 +16,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
+    "License :: Other/Proprietary License",
+    "Private :: Do Not Upload",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [

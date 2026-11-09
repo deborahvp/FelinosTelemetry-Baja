@@ -1,7 +1,7 @@
 # felinos-telemetry
 
 [![CI](https://github.com/deborahvp/FelinosTelemetry-Baja/actions/workflows/ci.yml/badge.svg)](https://github.com/deborahvp/FelinosTelemetry-Baja/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: All rights reserved](https://img.shields.io/badge/license-all%20rights%20reserved-lightgrey.svg)](LICENSE)
 
 **End-to-end vehicle data acquisition and verification pipeline for a Baja SAE off-road prototype: live telemetry, automated test analysis and requirements traceability (DVP&R).**
 
@@ -116,4 +116,7 @@ Conventions: Conventional Commits, SemVer tags, [Keep a Changelog](CHANGELOG.md)
 
 ## License
 
-[MIT](LICENSE)
+© 2026 Deborah Villicaña Prieto. **All rights reserved.** Proprietary software, not open
+source: see [LICENSE](LICENSE). The Felinos Racing team may use it for its own testing while the
+author authorizes it; any other use, copy, modification or distribution requires the author's
+written permission. Third-party libraries in `dashboard/vendor/` keep their own licenses.

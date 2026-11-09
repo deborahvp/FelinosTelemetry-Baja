@@ -1,5 +1,10 @@
 # Contributing
 
+> **Ownership.** felinos-telemetry is proprietary software © 2026 Deborah Villicaña Prieto, all
+> rights reserved (see [LICENSE](LICENSE)). Contributions are accepted only with the author's
+> prior agreement, and contributing does not grant ownership or authorship rights over the
+> Software unless a signed written agreement says otherwise.
+
 ## Setup
 
 ```bash

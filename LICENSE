@@ -1,21 +1,76 @@
-MIT License
+Copyright (c) 2026 Deborah Villicaña Prieto. All rights reserved.
 
-Copyright (c) 2026 Deborah Villicaña Prieto and Felinos Racing
+felinos-telemetry ("the Software") — source code, dashboard, documentation, configuration and
+design — is the exclusive property of its author, Deborah Villicaña Prieto. It is NOT open
+source. No license or right is granted except as expressly stated below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. LIMITED PERMISSION TO THE TEAM
+   The Felinos Racing Baja SAE team of Universidad La Salle Bajío may use the Software, as
+   provided by the author, solely for the team's own testing, data acquisition and competition
+   activities, while the author authorizes it. This permission is personal, non-exclusive,
+   non-transferable, non-sublicensable, free of charge, and revocable by the author at any time
+   by written notice (email is sufficient). It does not transfer any ownership.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. WHAT IS NOT PERMITTED without the author's prior written permission
+   - copying the Software beyond what is needed for the use in clause 1;
+   - modifying it, creating derivative works, or incorporating it into other software;
+   - distributing, publishing, sublicensing, selling, renting or lending it;
+   - using it outside the Felinos Racing team, or for any other purpose (academic credit,
+     commercial, other teams or institutions) except the author's own;
+   - removing or altering copyright notices or this license.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. OWNERSHIP
+   Access to the Software (including viewing it on a code-hosting site or in a portfolio), use
+   under clause 1, or participation in the team does not grant any ownership or authorship
+   rights. Contributions by other people do not change the ownership of the Software unless the
+   author agrees otherwise in a signed written agreement.
+
+4. THIRD-PARTY COMPONENTS
+   Files under dashboard/vendor/ are third-party libraries distributed under their own licenses
+   (MIT, BSD-2-Clause); see dashboard/vendor/README.md. This license does not apply to them.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO
+   EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+   USE OF THE SOFTWARE.
+
+Permissions and inquiries: Deborah Villicaña Prieto <deborahvillicana@outlook.com>
+
+-------------------------------------------------------------------------------------------------
+
+Copyright (c) 2026 Deborah Villicaña Prieto. Todos los derechos reservados.
+
+felinos-telemetry ("el Software") — código fuente, dashboard, documentación, configuración y
+diseño — es propiedad exclusiva de su autora, Deborah Villicaña Prieto. NO es software libre.
+No se otorga ninguna licencia ni derecho salvo lo indicado expresamente a continuación.
+
+1. PERMISO LIMITADO AL EQUIPO
+   El equipo Felinos Racing Baja SAE de la Universidad La Salle Bajío puede usar el Software,
+   tal como lo entrega la autora, únicamente para sus propias pruebas, adquisición de datos y
+   competencias, mientras la autora lo autorice. Este permiso es personal, no exclusivo,
+   intransferible, sin derecho a sublicenciar, gratuito y revocable por la autora en cualquier
+   momento mediante aviso por escrito (basta un correo). No transfiere ninguna titularidad.
+
+2. NO SE PERMITE sin autorización previa y por escrito de la autora
+   - copiar el Software más allá de lo necesario para el uso de la cláusula 1;
+   - modificarlo, crear obras derivadas o incorporarlo a otro software;
+   - distribuirlo, publicarlo, sublicenciarlo, venderlo, rentarlo o prestarlo;
+   - usarlo fuera del equipo Felinos Racing o con cualquier otro fin (créditos académicos,
+     comercial, otros equipos o instituciones) salvo los de la propia autora;
+   - eliminar o modificar los avisos de derechos de autor o esta licencia.
+
+3. TITULARIDAD
+   Tener acceso al Software (incluido verlo en un sitio de alojamiento de código o en un
+   portafolio), usarlo conforme a la cláusula 1 o participar en el equipo no otorga ningún
+   derecho de titularidad ni de autoría. Las contribuciones de otras personas no cambian la
+   titularidad del Software salvo que la autora acuerde otra cosa en un convenio escrito y firmado.
+
+4. COMPONENTES DE TERCEROS
+   Los archivos en dashboard/vendor/ son bibliotecas de terceros con sus propias licencias
+   (MIT, BSD-2-Clause); ver dashboard/vendor/README.md. Esta licencia no se les aplica.
+
+5. SIN GARANTÍA
+   EL SOFTWARE SE ENTREGA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO. LA AUTORA NO SERÁ RESPONSABLE
+   DE NINGÚN RECLAMO, DAÑO U OTRA RESPONSABILIDAD DERIVADA DEL USO DEL SOFTWARE.
+
+Permisos y consultas: Deborah Villicaña Prieto <deborahvillicana@outlook.com>

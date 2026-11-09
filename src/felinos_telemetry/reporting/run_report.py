@@ -8,6 +8,10 @@ import math
 from pathlib import Path
 from typing import Any
 
+COPYRIGHT = (
+    "© 2026 Deborah Villicaña Prieto. All rights reserved. Generated with felinos-telemetry."
+)
+
 
 def _clean(obj: Any) -> Any:
     """JSON-safe: NaN/inf → null, numpy scalars → Python."""
@@ -100,6 +104,10 @@ def render_markdown(s: dict[str, Any]) -> str:
     lines += [
         "",
         f"Accelerometer clipping: {s['quality']['accelerometer_clipping_fraction']:.2%} of samples.",
+        "",
+        "---",
+        "",
+        COPYRIGHT,
         "",
     ]
     return "\n".join(lines)

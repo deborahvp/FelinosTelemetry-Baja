@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **License:** the project is now proprietary — © 2026 Deborah Villicaña Prieto, all rights
+  reserved (previously MIT). The Felinos Racing team keeps a revocable permission to use it for
+  its own testing. Copyright notice added to the dashboard footer and to run reports.
+
 ### Added (v0.2 analysis)
 
 - `felinos analyze <run_dir>`: official per-run analysis of the phone's recording → `results/`

@@ -151,6 +151,9 @@ export const STRINGS = {
     clearLogConfirm: 'Delete the whole run log from this browser? Recordings and downloaded files are not affected.',
     noRuns: 'No runs yet. Start a recording in Sensor Logger.',
     liveNow: 'LIVE',
+    rightsReserved: 'All rights reserved',
+    developedFor: 'Developed for Felinos Racing · Baja SAE',
+    licenseLink: 'License',
   },
   es: {
     title: 'Felinos Telemetría',
@@ -293,6 +296,9 @@ export const STRINGS = {
     clearLogConfirm: '¿Borrar toda la bitácora de este navegador? Las grabaciones y los archivos descargados no se afectan.',
     noRuns: 'Aún no hay corridas. Inicia una grabación en Sensor Logger.',
     liveNow: 'EN VIVO',
+    rightsReserved: 'Todos los derechos reservados',
+    developedFor: 'Desarrollado para Felinos Racing · Baja SAE',
+    licenseLink: 'Licencia',
   },
 };
 
