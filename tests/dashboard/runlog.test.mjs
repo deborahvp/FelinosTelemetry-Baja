@@ -97,7 +97,7 @@ test('CSV export quotes fields that need it', () => {
   log.startSession('S1', { ...HEADER, driver: 'Pérez, Ana' }, { startedAt: new Date(2026, 10, 8, 9, 5, 7).getTime() });
   const csv = toCsv(log.entries).split('\n');
   assert.equal(csv[0].split(',')[0], 'run');
-  assert.match(csv[1], /^R01,acceleration,susp-A,cvt-1,"Pérez, Ana",La Salle Bajío,2026-11-08 09:05:07,0,0\.0,0\.00,0\.00,S1,,R01_acceleration_susp-A_cvt-1,,,,,,,,,$/);
+  assert.match(csv[1], /^R01,acceleration,susp-A,cvt-1,"Pérez, Ana",La Salle Bajío,2026-11-08 09:05:07,0,0\.0,0\.00,0\.00,S1,,R01_acceleration_susp-A_cvt-1,,,,,,,,,,,,$/);
 });
 
 test('live analysis is stored per run and exported to CSV and meta.yaml notes', () => {
@@ -112,7 +112,7 @@ test('live analysis is stored per run and exported to CSV and meta.yaml notes', 
   assert.equal(entry.analysis.activeS, 95.4); // a reload never shrinks it
   assert.equal(entry.analysis.counts.impact, 4);
   const row = toCsv(log.entries).split('\n')[1].split(',');
-  assert.deepEqual(row.slice(-9), ['95', '0.812', '4', '1', '2', '0', '4.38', '5.90', '2.65']);
+  assert.deepEqual(row.slice(-12, -3), ['95', '0.812', '4', '1', '2', '0', '4.38', '5.90', '2.65']);
   const yaml = toMetaYaml(entry);
   assert.match(yaml, /active 95 s; distance 0\.81 km; impacts 4, jumps 1, hard brakes 2, hard corners 0; best 100 ft 4\.38 s; best 150 ft 5\.90 s; tightest steady turn R_cg 2\.65 m \(live estimates\)/);
 });

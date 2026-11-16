@@ -7,8 +7,9 @@ import { TrackMap } from './map.js';
 import { connectLive, isBrokerUrl, resolveConnection } from './mqtt.js';
 import { parseNdjson, play } from './replay.js';
 import { REQUIREMENTS, runValue, summarizeGoals } from './goals.js';
-import { RunLog, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
+import { RunLog, bestManual, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
 import { Store } from './state.js';
+import { Stopwatch, autoTimes, formatStopwatch } from './timer.js';
 import { matchPreset, parseAxisMap, presetAxisMap } from './vehicle.js';
 
 const DEFAULTS = {
@@ -212,14 +213,22 @@ function renderGoals() {
   $('uDist').textContent = `${fmtNum(g.today.distanceM / 1000, 2)} km`;
 }
 
-function renderRunLog() {
-  const current = store.session?.id;
-  const rows = [...runLog.entries].reverse().map((e) => {
-    const tr = document.createElement('tr');
-    if (e.sessionId === current) tr.className = 'current';
-    const d = new Date(e.startedAt);
-    const start = `${localDate(e.startedAt)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    const cells = [
+/** Stopwatch column: best manual time and how many were taken. */
+function timerSummary(e) {
+  const best = bestManual(e);
+  if (best === null) return '—';
+  const n = e.timings.length;
+  return n > 1 ? `${fmtNum(best, 2)} s (${n})` : `${fmtNum(best, 2)} s`;
+}
+
+// Rows are kept per run and updated in place: rebuilding the table every second while data
+// streams in would replace the buttons mid-click and lose the click.
+const runRowEls = new Map(); // sessionId → {tr, tds, live}
+
+function runRowCells(e) {
+  const d = new Date(e.startedAt);
+  const start = `${localDate(e.startedAt)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return [
       [e.run, ''],
       [t(`t_${e.test}`), ''],
       [[e.suspension, e.cvt].filter(Boolean).join(' · ') || '—', ''],
@@ -232,28 +241,63 @@ function renderRunLog() {
       [`${fmtNum(e.maxAlong, 2)} / ${fmtNum(e.maxAlat, 2)}`, 'r'],
       [e.analysis ? `${e.analysis.counts.impact} / ${e.analysis.counts.jump} / ${e.analysis.counts.hardBrake}` : '—', 'r'],
       [runResult(e), 'r'],
-    ];
+      [timerSummary(e), 'r'],
+      [e.notes?.trim() || '—', 'note'],
+  ];
+}
+
+function createRunRow(sessionId, cells) {
+  const tr = document.createElement('tr');
+  const tds = cells.map(([, cls], i) => {
+    const td = document.createElement('td');
+    if (cls) td.className = cls;
+    if (i === 0) td.append(document.createElement('b'), Object.assign(document.createElement('span'), { className: 'live-tag' }));
+    tr.appendChild(td);
+    return td;
+  });
+  const td = document.createElement('td');
+  td.className = 'r';
+  const actions = Object.assign(document.createElement('span'), { className: 'row-actions' });
+  const edit = Object.assign(document.createElement('button'), { className: 'small-btn' });
+  edit.onclick = () => openEdit(sessionId);
+  const meta = Object.assign(document.createElement('button'), { className: 'small-btn', textContent: 'meta.yaml' });
+  meta.onclick = () => {
+    const e = runLog.find(sessionId);
+    if (e) download(`${folderName(e)}.meta.yaml`, toMetaYaml(e, { axisMap }), 'text/yaml');
+  };
+  actions.append(edit, meta);
+  td.appendChild(actions);
+  tr.appendChild(td);
+  return { tr, tds, edit, meta };
+}
+
+function renderRunLog() {
+  const current = store.session?.id;
+  const ordered = [...runLog.entries].reverse();
+  const keep = new Set(ordered.map((e) => e.sessionId));
+  for (const [id, row] of runRowEls) if (!keep.has(id)) { row.tr.remove(); runRowEls.delete(id); }
+  const body = $('runRows');
+  ordered.forEach((e, index) => {
+    const cells = runRowCells(e);
+    let row = runRowEls.get(e.sessionId);
+    if (!row) { row = createRunRow(e.sessionId, cells); runRowEls.set(e.sessionId, row); }
+    const live = e.sessionId === current;
+    row.tr.className = live ? 'current' : '';
     cells.forEach(([text, cls], i) => {
-      const td = document.createElement('td');
-      if (cls) td.className = cls;
+      const td = row.tds[i];
       if (i === 0) {
-        td.appendChild(Object.assign(document.createElement('b'), { textContent: text }));
-        if (e.sessionId === current) td.appendChild(Object.assign(document.createElement('span'), { className: 'live-tag', textContent: t('liveNow') }));
-      } else {
+        td.firstChild.textContent = text;
+        td.lastChild.textContent = live ? t('liveNow') : '';
+      } else if (td.textContent !== text) {
         td.textContent = text;
       }
-      tr.appendChild(td);
+      if (cls === 'note') td.title = e.notes ?? '';
     });
-    const td = document.createElement('td');
-    td.className = 'r';
-    const btn = Object.assign(document.createElement('button'), { className: 'small-btn', textContent: 'meta.yaml', title: `${folderName(e)}/meta.yaml` });
-    btn.onclick = () => download(`${folderName(e)}.meta.yaml`, toMetaYaml(e, { axisMap }), 'text/yaml');
-    td.appendChild(btn);
-    tr.appendChild(td);
-    return tr;
+    row.edit.textContent = t('edit');
+    row.meta.title = `${folderName(e)}/meta.yaml`;
+    if (body.children[index] !== row.tr) body.insertBefore(row.tr, body.children[index] ?? null);
   });
-  $('runRows').replaceChildren(...rows);
-  $('runEmpty').hidden = rows.length > 0;
+  $('runEmpty').hidden = ordered.length > 0;
 }
 
 function renderStatus() {
@@ -328,6 +372,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
   document.querySelectorAll('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((n) => { n.placeholder = t(n.dataset.i18nPlaceholder); });
   document.querySelectorAll('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
   $('mapSub').textContent = t(hasTrack ? 'mapSub' : cfg.satellite ? 'mapSat' : 'mapNoImage');
   $('mapRange').textContent = `0 → ${cfg.mapMaxSpeedKmh} km/h`;
@@ -337,6 +382,7 @@ function applyLang() {
   dirty = true;
   runLogDirty = true;
   renderStatus();
+  renderStopwatch();
 }
 
 // ---- controls -------------------------------------------------------------------------
@@ -430,6 +476,145 @@ connDialog.addEventListener('close', () => {
   }
 });
 
+// ---- stopwatch: manual time + what the vehicle measured meanwhile ------------------------
+const sw = new Stopwatch();
+let swPending = null; // last saved timing still waiting for the automatic times
+let swMsg = null;
+
+function swAuto() {
+  const a = store.session?.analysis;
+  if (!a || sw.startMs === null) return null;
+  return autoTimes(a.attempts, a.liveLaunch(), sw.startMs, sw.stopMs ?? Date.now());
+}
+
+function setSwOpen(open) {
+  $('swPanel').hidden = !open;
+  $('swOpen').hidden = open;
+  store_.set('felinos.swOpen', open);
+  document.body.classList.toggle('sw-open', open);
+}
+
+function swToggle() {
+  const result = sw.toggle(Date.now());
+  swMsg = null;
+  if (result) {
+    const auto = swAuto();
+    const timing = { ...result, auto100: auto?.t100 ?? null, auto150: auto?.t150 ?? null };
+    const target = store.session ? runLog.find(store.session.id) : null;
+    if (target) {
+      runLog.addTiming(target.sessionId, timing);
+      swPending = { sessionId: target.sessionId, index: target.timings.length - 1, until: Date.now() + 30_000 };
+      swMsg = { text: t('timerSaved', { run: target.run }), warn: false };
+      runLogDirty = true;
+    } else {
+      swMsg = { text: t('timerNoRun'), warn: true };
+    }
+  }
+  renderStopwatch();
+}
+
+function renderStopwatch() {
+  const running = sw.running;
+  $('stopwatch').classList.toggle('running', running);
+  $('swMain').textContent = running ? t('timerStop') : t('timerStart');
+  $('swTime').textContent = formatStopwatch(sw.elapsedS(Date.now()));
+  $('swRun').textContent = store.session ? (runLog.find(store.session.id)?.run ?? '') : '';
+  $('swManual').textContent = sw.stopped ? `${fmtNum(sw.elapsedS(0), 2)} s` : '—';
+  const auto = swAuto();
+  const show = (v) => (v !== null && v !== undefined ? `${fmtNum(v, 2)} s` : auto?.measuring ? t('timerMeasuring') : '—');
+  $('swAuto100').textContent = show(auto?.t100);
+  $('swAuto150').textContent = show(auto?.t150);
+  $('swRow150').hidden = !(run.test === 'climb' || Number.isFinite(auto?.t150));
+  $('swMsg').hidden = !swMsg;
+  if (swMsg) { $('swMsg').textContent = swMsg.text; $('swMsg').className = `sw-msg${swMsg.warn ? ' warn' : ''}`; }
+  // A launch may finish after Stop: fill in the automatic times of the saved timing.
+  if (swPending && Date.now() < swPending.until && auto && !auto.measuring) {
+    const timing = runLog.find(swPending.sessionId)?.timings?.[swPending.index];
+    if (timing && (timing.auto100 ?? null) === null && auto.t100 !== null) {
+      timing.auto100 = auto.t100;
+      timing.auto150 = auto.t150;
+      runLog.save();
+      runLogDirty = true;
+      swPending = null;
+    }
+  }
+}
+
+$('swOpen').onclick = () => setSwOpen(true);
+$('swClose').onclick = () => setSwOpen(false);
+$('swMain').onclick = () => swToggle();
+$('swReset').onclick = () => { sw.reset(); swMsg = null; swPending = null; renderStopwatch(); };
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' || e.repeat) return;
+  if (e.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('dialog[open]')) return;
+  e.preventDefault(); // also stops a focused button from being "clicked" by the space bar
+  if ($('swPanel').hidden) setSwOpen(true);
+  swToggle();
+});
+setSwOpen(Boolean(store_.get('felinos.swOpen', false)));
+
+// ---- edit a run in the log: labels, notes, stopwatch times, delete ------------------------
+const editDialog = $('editDialog');
+const editForm = $('editForm');
+let editing = null;
+
+function renderEditTimings() {
+  const e = runLog.find(editing);
+  const items = (e?.timings ?? []).map((tm, i) => {
+    const li = document.createElement('li');
+    const auto = [tm.auto100 !== null && tm.auto100 !== undefined ? `100 ft ${fmtNum(tm.auto100, 2)} s` : null,
+      tm.auto150 !== null && tm.auto150 !== undefined ? `150 ft ${fmtNum(tm.auto150, 2)} s` : null].filter(Boolean).join(' · ');
+    li.append(Object.assign(document.createElement('span'), {
+      textContent: `${i + 1}. ${t('timerManual')} ${fmtNum(tm.manualS, 2)} s${auto ? ` · auto ${auto}` : ''}`,
+    }));
+    const del = Object.assign(document.createElement('button'), { type: 'button', textContent: '✕', title: t('deleteTiming') });
+    del.onclick = () => { runLog.removeTiming(editing, i); runLogDirty = true; renderEditTimings(); };
+    li.append(del);
+    return li;
+  });
+  if (!items.length) items.push(Object.assign(document.createElement('li'), { className: 'empty', textContent: t('noTimings') }));
+  $('editTimings').replaceChildren(...items);
+}
+
+function openEdit(sessionId) {
+  const e = runLog.find(sessionId);
+  if (!e) return;
+  editing = sessionId;
+  for (const k of ['run', 'test', 'suspension', 'cvt', 'driver', 'place']) editForm.elements[k].value = e[k] ?? '';
+  editForm.elements.notes.value = e.notes ?? '';
+  $('editTitle').textContent = `· ${e.run}`;
+  $('editError').hidden = true;
+  renderEditTimings();
+  editDialog.showModal();
+}
+
+$('editSave').onclick = (ev) => {
+  const id = editForm.elements.run.value.trim();
+  const problem = !/^R\d{2,}$/.test(id) ? t('runIdInvalid') : runLog.isRunIdTaken(id, editing) ? t('runIdTaken', { run: id }) : null;
+  if (problem) {
+    ev.preventDefault();
+    $('editError').textContent = problem;
+    $('editError').hidden = false;
+  }
+};
+editDialog.addEventListener('close', () => {
+  const e = runLog.find(editing);
+  if (!e) return;
+  if (editDialog.returnValue === 'save') {
+    const fields = Object.fromEntries(['run', 'test', 'suspension', 'cvt', 'driver', 'place'].map((k) => [k, editForm.elements[k].value]));
+    runLog.update(editing, { ...fields, notes: editForm.elements.notes.value });
+    if (editing === store.session?.id) { // editing the run being recorded also updates the header
+      run = Object.fromEntries(Object.keys(fields).map((k) => [k, e[k]]));
+      store_.set('felinos.run', run);
+    }
+  } else if (editDialog.returnValue === 'delete') {
+    if (!window.confirm(t('deleteRunConfirm', { run: e.run }))) return;
+    runLog.remove(editing);
+  }
+  runLogDirty = true;
+  renderStatus();
+});
+
 $('exportCsv').onclick = () => {
   download(`felinos-run-log_${localDate(Date.now())}.csv`, toCsv(runLog.entries), 'text/csv');
 };
@@ -460,3 +645,4 @@ setInterval(() => {
   if (runLogDirty) { renderRunLog(); renderGoals(); runLogDirty = false; }
 }, 1000);
 setInterval(() => runLog.save(), 5000); // persist live stats
+setInterval(() => { if (sw.running || !$('swPanel').hidden) renderStopwatch(); }, 50);

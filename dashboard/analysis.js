@@ -305,6 +305,13 @@ export class LiveAnalyzer {
     }
   }
 
+  /** Launch being measured right now (for the stopwatch), or null: {t, t100, t150, distanceM}. */
+  liveLaunch() {
+    const L = this.launch;
+    if (!L) return null;
+    return { t: L.t0, t100: L.times[0] ?? null, t150: L.times[1] ?? null, distanceM: L.d };
+  }
+
   /** Close any open segment (end of recording). */
   flush() {
     if (this.launch) this.finishLaunch();

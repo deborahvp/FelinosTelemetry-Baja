@@ -64,7 +64,11 @@ El dashboard detecta solo si el teléfono es iPhone o Android (signos y unidades
 | 6 | Piloto | Al terminar, **5 s detenido** y **detener grabación**. |
 | 7 | Datos | En la bitácora, botón **meta.yaml** de esa corrida → se descarga ya llenado. Completar presión de llantas, clima y observaciones (`notes`). |
 
-Si te equivocaste de etiqueta durante la grabación, edítala en "Corrida …": se corrige la corrida actual. Al final del día usa **Exportar CSV** para guardar la bitácora completa.
+**Cronómetro** (botón ⏱ abajo a la derecha, o la **barra espaciadora**): iniciar al arrancar, detener al terminar. El tiempo se guarda en la corrida que se está grabando y aparece en la bitácora. En aceleración y ascenso se muestra también el tiempo **automático** que midió el carro (100 ft / 150 ft); el manual incluye ~0.2 s de reacción humana, el automático no. Se pueden tomar varios tiempos por corrida.
+
+**Corregir datos o agregar notas:** en la bitácora, botón **Editar** de cualquier corrida → cambiar ID, tipo de prueba, suspensión, CVT, piloto o lugar, escribir **notas** (clima, fallas, comentarios del piloto) y borrar tiempos de cronómetro equivocados. Si la corrida se está grabando, también se actualiza el encabezado. **Eliminar corrida** borra una corrida de prueba de la bitácora (no borra la grabación del teléfono).
+
+Al final del día usa **Exportar CSV** para guardar la bitácora completa (incluye notas y tiempos de cronómetro).
 
 Pruebas sugeridas para esta primera salida (también sirven para calibrar umbrales en v0.2):
 

@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reserved (previously MIT). The Felinos Racing team keeps a revocable permission to use it for
   its own testing. Copyright notice added to the dashboard footer and to run reports.
 
+### Added (dashboard)
+
+- Floating **stopwatch** (button or space bar): manual start/stop saved to the run being recorded,
+  shown next to the automatic 100 ft / 150 ft times the vehicle measured meanwhile; several times
+  per run; listed in the run log, CSV and meta.yaml notes.
+- **Edit run** dialog: fix run ID (validated, unique), test type, configuration, driver and place
+  after the fact, add **notes**, delete wrong stopwatch times or a whole test run.
+- Run log rows are updated in place instead of rebuilt every second, so clicks are never lost
+  while data streams in.
+
 ### Added (v0.2 analysis)
 
 - `felinos analyze <run_dir>`: official per-run analysis of the phone's recording → `results/`

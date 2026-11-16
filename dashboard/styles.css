@@ -220,6 +220,51 @@ dialog menu button { padding: 7px 14px; border-radius: 8px; border: 1px solid va
   background: var(--surface-2); color: var(--text); font-weight: 600; cursor: pointer; }
 dialog menu button.primary { background: var(--brand-blue); border-color: var(--brand-blue); color: var(--brand-on); }
 
+/* Stopwatch (floating) */
+.stopwatch { position: fixed; right: 18px; bottom: 18px; z-index: 900; }
+.sw-fab { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 10px 16px;
+  background: var(--brand-blue); color: var(--brand-on); font-weight: 700; font-size: 14px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.stopwatch.running .sw-fab { background: var(--brand-red); }
+.sw-fab[hidden] { display: none; }
+/* Leave room so the open panel never hides the last rows or the footer */
+body.sw-open { padding-bottom: 300px; }
+.sw-panel { width: 270px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.sw-panel[hidden] { display: none; }
+.sw-head { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.sw-run { color: var(--text-3); font-size: 12px; flex: 1; }
+.sw-min { border: 0; background: transparent; color: var(--text-3); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.sw-time { font-size: 40px; font-weight: 700; letter-spacing: .01em; margin: 4px 0 6px; }
+.stopwatch.running .sw-time { color: var(--brand-red); }
+.sw-rows { display: grid; gap: 3px; font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+.sw-rows div { display: flex; justify-content: space-between; }
+.sw-rows b { color: var(--text); }
+.sw-rows[hidden], #swRow150[hidden] { display: none; }
+.sw-actions { display: flex; gap: 8px; }
+.sw-main { flex: 1; border: 0; border-radius: 10px; padding: 11px 12px; font-weight: 700; font-size: 15px; cursor: pointer;
+  background: var(--good); color: #fff; }
+.stopwatch.running .sw-main { background: var(--brand-red); }
+.sw-msg { font-size: 12px; color: var(--good); margin-top: 8px; font-weight: 600; }
+.sw-msg.warn { color: var(--warning); }
+.sw-msg[hidden] { display: none; }
+.sw-hint { font-size: 10.5px; color: var(--text-3); margin-top: 6px; }
+
+/* Edit run dialog */
+dialog textarea { font: inherit; font-size: 14px; padding: 7px 9px; border-radius: 7px; resize: vertical;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+dialog .timings { margin: 4px 0 10px; }
+dialog .timings-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
+dialog .timings ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+dialog .timings li { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px;
+  background: var(--surface-2); border-radius: 7px; padding: 5px 8px; }
+dialog .timings li.empty { color: var(--text-3); }
+dialog .timings li button { border: 0; background: transparent; color: var(--critical); cursor: pointer; font-size: 15px; }
+dialog menu .spacer { flex: 1; }
+dialog menu button.danger { color: var(--critical); border-color: var(--critical); background: transparent; }
+.runlog td.note { max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+.runlog td .row-actions { display: inline-flex; gap: 6px; }
+
 /* Footer: copyright notice */
 .site-footer { padding: 4px 20px 20px; font-size: 11.5px; color: var(--text-3); text-align: center; }
 .site-footer a { color: var(--text-2); }
@@ -246,4 +291,6 @@ dialog menu button.primary { background: var(--brand-blue); border-color: var(--
   .chart { height: 180px; }
   #map { height: 240px; }
   .map-wrap .map-coords { top: 10px; bottom: auto; }
+  .stopwatch { right: 12px; bottom: 12px; left: 12px; display: flex; justify-content: flex-end; }
+  .sw-panel { width: 100%; }
 }

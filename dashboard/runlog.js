@@ -136,10 +136,52 @@ export class RunLog {
     if (analysis) e.analysis = mergeAnalysis(e.analysis, analysis);
   }
 
+  /** True if another run (not `exceptSessionId`) already uses this run ID. */
+  isRunIdTaken(runId, exceptSessionId = null) {
+    return this.entries.some((e) => e.run === runId && e.sessionId !== exceptSessionId);
+  }
+
+  /** Edit a run after the fact: labels (run ID, test, configuration, driver, place) and notes. */
+  update(sessionId, { notes, ...fields }) {
+    const e = this.find(sessionId);
+    if (!e) return null;
+    for (const k of FIELDS) if (k in fields) e[k] = String(fields[k] ?? '').trim();
+    if (notes !== undefined) e.notes = String(notes);
+    this.save();
+    return e;
+  }
+
+  /** Stopwatch result for a run: manual time plus the automatic times measured meanwhile. */
+  addTiming(sessionId, timing) {
+    const e = this.find(sessionId);
+    if (!e) return null;
+    e.timings = [...(e.timings ?? []), { ...timing }];
+    this.save();
+    return e;
+  }
+
+  removeTiming(sessionId, index) {
+    const e = this.find(sessionId);
+    if (!e?.timings || index < 0 || index >= e.timings.length) return;
+    e.timings = e.timings.filter((_, i) => i !== index);
+    this.save();
+  }
+
+  remove(sessionId) {
+    this.entries = this.entries.filter((e) => e.sessionId !== sessionId);
+    this.save();
+  }
+
   clear() {
     this.entries = [];
     this.save();
   }
+}
+
+/** Best (lowest) manual stopwatch time of a run, or null. */
+export function bestManual(entry) {
+  const xs = (entry.timings ?? []).map((x) => x.manualS).filter((x) => Number.isFinite(x));
+  return xs.length ? Math.min(...xs) : null;
 }
 
 function pick(obj) {
@@ -211,7 +253,13 @@ function runNotes(entry) {
     if (t150 !== null) parts.push(`best 150 ft ${t150.toFixed(2)} s`);
     if (r !== null) parts.push(`tightest steady turn R_cg ${r.toFixed(2)} m`);
   }
-  return `${parts.join('; ')} (live estimates)`;
+  const live = `${parts.join('; ')} (live estimates)`;
+  const manual = (entry.timings ?? []).filter((x) => Number.isFinite(x.manualS)).map((x) => `${x.manualS.toFixed(2)} s`);
+  const out = [];
+  if (entry.notes?.trim()) out.push(entry.notes.trim());
+  if (manual.length) out.push(`stopwatch: ${manual.join(', ')}`);
+  out.push(live);
+  return out.join(' | ');
 }
 
 const csvCell = (v) => {
@@ -221,7 +269,8 @@ const csvCell = (v) => {
 
 export function toCsv(entries) {
   const head = ['run', 'test', 'suspension', 'cvt', 'driver', 'place', 'start_local', 'duration_s', 'max_speed_kmh', 'max_along_g', 'max_alat_g', 'session_id', 'device_id', 'folder',
-    'active_s', 'distance_km', 'impacts', 'jumps', 'hard_brakes', 'hard_corners', 'best_100ft_s', 'best_150ft_s', 'min_turn_radius_cg_m'];
+    'active_s', 'distance_km', 'impacts', 'jumps', 'hard_brakes', 'hard_corners', 'best_100ft_s', 'best_150ft_s', 'min_turn_radius_cg_m',
+    'stopwatch_times_s', 'best_stopwatch_s', 'notes'];
   const fmt = (x, d) => (x === null || x === undefined ? '' : x.toFixed(d));
   const rows = entries.map((e) => {
     const d = new Date(e.startedAt);
@@ -230,7 +279,8 @@ export function toCsv(entries) {
     return [e.run, e.test, e.suspension, e.cvt, e.driver, e.place, start, Math.round(e.duration), e.maxSpeed.toFixed(1), e.maxAlong.toFixed(2), e.maxAlat.toFixed(2), e.sessionId, e.deviceId ?? '', folderName(e),
       a ? Math.round(a.activeS) : '', a ? (a.distanceM / 1000).toFixed(3) : '',
       a?.counts.impact ?? '', a?.counts.jump ?? '', a?.counts.hardBrake ?? '', a?.counts.hardCorner ?? '',
-      fmt(bestAttempt(e, 't100'), 2), fmt(bestAttempt(e, 't150'), 2), fmt(minTurn(e), 2)];
+      fmt(bestAttempt(e, 't100'), 2), fmt(bestAttempt(e, 't150'), 2), fmt(minTurn(e), 2),
+      (e.timings ?? []).filter((x) => Number.isFinite(x.manualS)).map((x) => x.manualS.toFixed(2)).join(';'), fmt(bestManual(e), 2), e.notes ?? ''];
   });
   return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }

@@ -22,7 +22,7 @@ test('placeholders match between languages', () => {
 test('every key used in the dashboard exists', () => {
   const used = new Set();
   const html = readFileSync(new URL('index.html', dashboard), 'utf8');
-  for (const m of html.matchAll(/data-i18n(?:-title|-aria)?="([\w]+)"/g)) used.add(m[1]);
+  for (const m of html.matchAll(/data-i18n(?:-title|-aria|-placeholder)?="([\w]+)"/g)) used.add(m[1]);
   for (const file of readdirSync(dashboard).filter((f) => f.endsWith('.js'))) {
     const src = readFileSync(new URL(file, dashboard), 'utf8');
     for (const m of src.matchAll(/\bt\('([\w]+)'/g)) used.add(m[1]);
