@@ -26,6 +26,8 @@ class TestType(StrEnum):
     CLIMB = "climb"
     OBSTACLES = "obstacles"
     ENDURANCE = "endurance"
+    SUSPENSION = "suspension"  # suspension track: obstacles + ramp jumps (VG-07)
+    TRACTION = "traction"  # towing a heavy load
     FREE = "free"
 
 

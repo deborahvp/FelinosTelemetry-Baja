@@ -6,7 +6,7 @@ date: 2026-11-08
 session_id: 2026-11-08_leon-gto
 run_id: R01
 sensorlogger_session_id: null     # filled in on import
-test_type: acceleration           # acceleration | turning | climb | obstacles | endurance | free
+test_type: acceleration           # acceleration | turning | climb | obstacles | suspension | traction | endurance | free
 requirement_ids: [VG-04]
 driver: ""
 configuration:

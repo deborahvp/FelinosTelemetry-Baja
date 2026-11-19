@@ -72,6 +72,8 @@ export function testFromTag(tag) {
   if (/giro|turn|radio/.test(t)) return 'turning';
   if (/ascen|climb|subida|pendiente/.test(t)) return 'climb';
   if (/obsta/.test(t)) return 'obstacles';
+  if (/susp/.test(t)) return 'suspension';
+  if (/tracc|tracti|arrastre|towing/.test(t)) return 'traction';
   if (/endur|resist/.test(t)) return 'endurance';
   return 'free';
 }

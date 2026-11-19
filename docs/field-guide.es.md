@@ -109,6 +109,10 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 5. **Montaje** debe coincidir con cómo iba el teléfono (el 16 de noviembre: *Vertical, pantalla hacia el frente*); si se cambia, la repetición se recalcula sola.
 6. **En vivo** regresa al modo normal. La repetición no agrega nada a la bitácora.
 
+Las etiquetas (*tags*) de Sensor Logger definen el tipo de prueba: *Aceleración*, *Suspensión* (pista con obstáculos y rampa, VG-07), *Tracción* (arrastre de carga), *Frenado*, *Free*. Usa siempre la misma palabra al etiquetar.
+
+**Tracción:** el tiempo a 100 ft se toma con el **cronómetro** del dashboard. Arrastrando 2.7 t el carro acelera ~0.03–0.05 g y el GPS sobrestima la distancia ~15–20 % a esa velocidad (en las pruebas del 8 de noviembre daba ~11 s contra 14 s del cronómetro), así que no hay tiempo automático para esta prueba.
+
 ## 8. Mapa
 
 - **Con internet:** el mapa muestra imagen satelital de la zona (Esri) y encima la traza GPS. No hay que hacer nada.

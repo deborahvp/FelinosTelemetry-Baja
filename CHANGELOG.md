@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (dashboard)
 
+- Test types **suspension** (suspension track: obstacles + ramp, linked to VG-07) and
+  **traction** (towing a heavy load), in the dashboard dialogs, Sensor Logger tag mapping
+  (*Suspensión*, *Tracción*) and Python `TestType`. Replay summary adds the hardest impact and
+  distance, and shows 100/150 ft times only for acceleration, climb and free runs. Validated on
+  the 2026-11-08 test day: 12/13 acceleration runs within ±0.16 s of the team's analysis.
+
 - **Replay mode** (Live | Replay tabs): open a test-day folder (one subfolder per Sensor Logger
   CSV export) or `.ndjson` backups in the browser (nothing is uploaded), pick a recording and play
   it through the live pipeline with play/pause (space bar), 1×/2×/5×/10× and seek. Whole-run

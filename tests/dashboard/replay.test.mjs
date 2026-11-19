@@ -13,6 +13,8 @@ test('testFromTag maps Sensor Logger tags to test types', () => {
   assert.equal(testFromTag('Aceleración'), 'acceleration');
   assert.equal(testFromTag('Radio de giro'), 'turning');
   assert.equal(testFromTag('Ascenso'), 'climb');
+  assert.equal(testFromTag('Suspensión'), 'suspension');
+  assert.equal(testFromTag('Tracción'), 'traction');
   assert.equal(testFromTag('Frenado'), 'free');
   assert.equal(testFromTag(''), 'free');
 });

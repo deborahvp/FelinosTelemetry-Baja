@@ -699,9 +699,12 @@ function summarize(rec) {
     sum += a[i] - (i >= 12 ? a[i - 12] : 0);
     if (i >= 11 && sum / 12 < minAlong) minAlong = sum / 12;
   }
+  const impactPeaks = s.analysis.events.filter((e) => e.type === 'impact').map((e) => e.peak);
   return {
     duration: rec.t1 - rec.t0,
     maxSpeed: s.max.speed,
+    peakImpact: impactPeaks.length ? Math.max(...impactPeaks) : null,
+    distanceM: s.analysis.distanceM,
     t100: best('t100'),
     t150: best('t150'),
     maxBrake: s.imu.along.length ? -minAlong : null,
@@ -715,6 +718,7 @@ function renderSummary() {
   const m = replay.summary;
   box.hidden = !m;
   if (!m) return;
+  const launchTest = ['acceleration', 'climb', 'free'].includes(replay.rec?.test);
   const chip = (label, value) => {
     const el = document.createElement('span');
     el.append(`${label} `, Object.assign(document.createElement('b'), { textContent: value }));
@@ -723,13 +727,16 @@ function renderSummary() {
   box.replaceChildren(
     chip(t('sumDuration'), clock(m.duration)),
     chip(t('sumMaxSpeed'), `${fmtNum(m.maxSpeed, 1)} km/h`),
-    chip(t('sum100'), m.t100 === null ? '—' : `${fmtNum(m.t100, 2)} s`),
-    ...(m.t150 !== null ? [chip(t('sum150'), `${fmtNum(m.t150, 2)} s`)] : []),
+    // Launch times only where a standing start is the test (not on the suspension track or towing).
+    ...(launchTest ? [chip(t('sum100'), m.t100 === null ? '—' : `${fmtNum(m.t100, 2)} s`)] : []),
+    ...(launchTest && m.t150 !== null ? [chip(t('sum150'), `${fmtNum(m.t150, 2)} s`)] : []),
     chip(t('sumMaxBrake'), m.maxBrake === null ? '—' : `${fmtNum(m.maxBrake, 2)} g`),
     chip(t('impacts'), String(m.counts.impact)),
+    ...(m.peakImpact !== null ? [chip(t('sumPeakImpact'), `${fmtNum(m.peakImpact, 1)} g`)] : []),
     chip(t('jumps'), String(m.counts.jump)),
     chip(t('hardBrakes'), String(m.counts.hardBrake)),
     chip(t('sumActive'), clock(m.activeS)),
+    chip(t('colDistance'), `${fmtNum(m.distanceM, 0)} m`),
   );
   box.title = t('replayMountHint');
 }

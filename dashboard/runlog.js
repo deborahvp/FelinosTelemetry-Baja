@@ -10,6 +10,8 @@ export const TEST_REQUIREMENTS = {
   turning: ['VG-05'],
   climb: ['VG-06'],
   obstacles: ['VG-07'],
+  suspension: ['VG-07'], // obstacles of 28-29 cm on the suspension track
+  traction: [],
   endurance: ['VG-02'],
   free: [],
 };
