@@ -169,3 +169,19 @@ def test_cli_errors(tmp_path: Path) -> None:
     assert runner.invoke(app, ["analyze", str(tmp_path)]).exit_code == 2  # no export
     assert runner.invoke(app, ["usage", str(tmp_path / "missing")]).exit_code == 2
     assert runner.invoke(app, ["usage", str(tmp_path)]).exit_code == 1  # nothing analyzed
+
+
+def test_real_iphone_launch_matches_reference() -> None:
+    """Real iPhone 15 run (2026-11-16): engine vibration ~0.5 g at rest, invalid GPS speed while
+    stopped and GPS speed lagging ~1-2 s. The team's own analysis measured 5.19 s to 100 ft."""
+    long = read_export(Path(__file__).parent / "fixtures" / "iphone_accel")
+    s = analyze(
+        long,
+        meta=_meta("acceleration", {"x": "lateral", "y": "vertical", "z": "longitudinal"}),
+        requirements=REQS,
+    )
+    assert s["frame"]["platform_convention"] == "ios"
+    assert len(s["attempts"]) == 1
+    goal = s["goals"][0]
+    assert goal["value"] == pytest.approx(5.19, abs=0.2)
+    assert goal["pass"] is False  # 5.2 s > 4.3 s target

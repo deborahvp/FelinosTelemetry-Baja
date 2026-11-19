@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import statistics
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -77,6 +78,7 @@ class StreamAnalyzer:
         self._acc_ms = 0.0
         self.distance_m = 0.0
         self._last_gps: tuple[float, float | None, float, float] | None = None
+        self._last_valid_gps_t: float | None = None
         self.counts = {"impact": 0, "jump": 0, "hardBrake": 0, "hardCorner": 0}
         self.impact_bins = [0] * len(self.cfg.events.impact_severity_g)
         self.events: list[Event] = []
@@ -89,10 +91,9 @@ class StreamAnalyzer:
         self._lat_s = 0.0
         self._last_imu_t: float | None = None
         self._rest_start: float | None = None
-        self._rest_sum = 0.0
-        self._rest_n = 0
+        self._rest_buf: deque[tuple[float, float]] = deque(maxlen=3000)  # (t, a_long) at rest
         self._exceed_start: float | None = None
-        self._pre = (0.0, 0.0)
+        self._exceed_buf: list[tuple[float, float]] = []  # (dt, a_long) since exceed start
         self._launch: _Launch | None = None
         self.attempts: list[Attempt] = []
         self._yaw_win: list[tuple[float, float]] = []
@@ -104,9 +105,17 @@ class StreamAnalyzer:
 
     # ---- GPS ----------------------------------------------------------------------------
 
-    def gps(self, t: float, speed_kmh: float | None, lat: float, lon: float) -> None:
+    def gps(self, t: float, raw_speed_kmh: float | None, lat: float, lon: float) -> None:
         u = self.cfg.usage
         prev = self._last_gps
+        # iPhones report an invalid speed when stopped: estimate it from the position; below the
+        # rest threshold it is a standstill, above it is often a GPS jump, so it stays unknown.
+        speed_kmh = raw_speed_kmh
+        if speed_kmh is None and prev is not None and 0 < t - prev[0] <= u.max_gap_s:
+            est = float(haversine_m(prev[2], prev[3], lat, lon)) / (t - prev[0]) * 3.6
+            speed_kmh = 0.0 if est < self.cfg.acceleration.rest_speed_kmh else None
+        if speed_kmh is not None:
+            self._last_valid_gps_t = t
         if prev is not None and speed_kmh is not None:
             dt = t - prev[0]
             if 0 < dt <= u.max_gap_s and speed_kmh >= u.active_speed_kmh:
@@ -128,7 +137,7 @@ class StreamAnalyzer:
         u = self.cfg.usage
         w = dt / (u.imu_window_s + dt) if dt > 0 else 1.0
         self._acc_ms += w * (long**2 + lat**2 + vert**2 - self._acc_ms)
-        covered = self._last_gps is not None and t - self._last_gps[0] <= u.max_gap_s
+        covered = self._last_valid_gps_t is not None and t - self._last_valid_gps_t <= u.max_gap_s
         if not covered and dt > 0 and math.sqrt(self._acc_ms) > u.imu_activity_g:
             self.active_imu_s += dt
 
@@ -233,45 +242,62 @@ class StreamAnalyzer:
                 self._finish_launch()
             return
         speed = self._speed_now(t)
-        at_rest = speed is not None and speed < c.rest_speed_kmh
-        if at_rest:
+        # Until the GPS has given a valid speed, assume the recording started parked.
+        at_rest = (speed is not None and speed < c.rest_speed_kmh) or self._last_valid_gps_t is None
+        if at_rest:  # every rest sample; those near a launch are excluded in _start_launch
             if self._rest_start is None:
-                self._rest_start, self._rest_sum, self._rest_n = t, 0.0, 0
-            self._rest_sum += long
-            self._rest_n += 1
-        elif self._rest_start is not None:
+                self._rest_start = t
+                self._rest_buf.clear()
+            self._rest_buf.append((t, long))
+        elif not at_rest and self._rest_start is not None:
             short_stop = t - self._rest_start < c.rest_min_s
             rolling = speed is not None and speed > c.rest_speed_kmh + 5
             if short_stop or rolling:
                 self._rest_start = None
         armed = (
-            self._rest_start is not None and t - self._rest_start >= c.rest_min_s and self._rest_n
+            self._rest_start is not None and t - self._rest_start >= c.rest_min_s and self._rest_buf
         )
         if not armed:
             self._exceed_start = None
             return
-        bias = self._rest_sum / self._rest_n
-        if long - bias > c.launch_g:
+        bias = statistics.fmean(x for _, x in self._rest_buf)
+        # Engine vibration at rest reaches ~0.5 g raw, so a launch is confirmed on the 0.1 s
+        # smoothed signal; its start is the first raw sample above the threshold (no time lost).
+        raw_above = long - bias > c.launch_g
+        smooth_above = self._long_s - bias > c.launch_g
+        if raw_above or smooth_above:
             if self._exceed_start is None:
-                self._exceed_start, self._pre = t, (0.0, 0.0)
-            else:
-                v = self._pre[0] + (long - bias) * G0 * dt
-                self._pre = (v, self._pre[1] + v * dt)
-            if t - self._exceed_start >= c.launch_min_s:
-                n = len(c.distances_m)
-                self._launch = _Launch(
-                    t0=self._exceed_start,
-                    bias=bias,
-                    v=self._pre[0],
-                    d=self._pre[1],
-                    times=[None] * n,
-                    gps_times=[None] * n,
-                    gps_last=(self._exceed_start, 0.0),
-                )
-                self._rest_start = None
-                self._exceed_start = None
+                self._exceed_start = t
+                self._exceed_buf = []
+            self._exceed_buf.append((dt, long))
+            if smooth_above and t - self._exceed_start >= c.launch_min_s:
+                self._start_launch()
         else:
             self._exceed_start = None
+
+    def _start_launch(self) -> None:
+        """Confirm a launch: bias from the rest samples before it, re-integrate since its start.
+
+        The GPS lags about a second, so it still reads "stopped" during the first part of the
+        launch; those samples must not leak into the at-rest bias.
+        """
+        c = self.cfg.acceleration
+        t0 = self._exceed_start
+        assert t0 is not None
+        clean = [x for t, x in self._rest_buf if t < t0 - 0.2] or [
+            x for t, x in self._rest_buf if t < t0
+        ]
+        bias = statistics.fmean(clean) if clean else 0.0
+        v = d = 0.0
+        for dt, x in self._exceed_buf[1:]:
+            v = max(0.0, v + (x - bias) * G0 * dt)
+            d += v * dt
+        n = len(c.distances_m)
+        self._launch = _Launch(
+            t0=t0, bias=bias, v=v, d=d, times=[None] * n, gps_times=[None] * n, gps_last=(t0, 0.0)
+        )
+        self._rest_start = None
+        self._exceed_start = None
 
     def _launch_gps(self, t: float, speed_kmh: float) -> None:
         c = self.cfg.acceleration

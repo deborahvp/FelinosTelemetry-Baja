@@ -206,7 +206,7 @@ class AccelerationConfig(_Model):
     launch_min_s: float = 0.1
     distances_m: list[float] = Field(default_factory=lambda: [30.48, 45.72])
     timeout_s: float = 60.0
-    gps_blend: float = 0.5
+    gps_blend: float = 0.0
 
 
 class TurningConfig(_Model):

@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reserved (previously MIT). The Felinos Racing team keeps a revocable permission to use it for
   its own testing. Copyright notice added to the dashboard footer and to run reports.
 
+### Fixed
+
+- Standing-start launches (VG-04/06) with real iPhone data: invalid GPS speed while stopped is
+  estimated from position, the launch is confirmed on the smoothed signal (engine vibration
+  ~0.5 g at rest), the at-rest bias excludes the samples just before the launch (GPS lag), a
+  recording is assumed to start parked until GPS gives a speed, and the GPS speed correction is
+  off by default (`gps_blend: 0`, iPhone GPS speed lags ~1-2 s). On the 2026-11-16 test day:
+  16/17 launches detected, within 0.07 s on average (max 0.15 s) of the team's own analysis.
+
 ### Added (dashboard)
 
 - Floating **stopwatch** (button or space bar): manual start/stop saved to the run being recorded,

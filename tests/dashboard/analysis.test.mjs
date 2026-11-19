@@ -154,3 +154,17 @@ test('snapshot is a plain copy', () => {
   assert.equal(an.counts.impact, 0);
   assert.deepEqual(Object.keys(s), ['activeS', 'activeGpsS', 'activeImuS', 'distanceM', 'counts', 'impactBins', 'attempts', 'turns']);
 });
+
+test('VG-04: iPhone-style invalid GPS speed at rest and engine vibration still give the launch', () => {
+  const an = new LiveAnalyzer();
+  const a = 0.5;
+  const tLaunch = 4;
+  const noise = (t) => 0.45 * Math.sin(t * 2 * Math.PI * 47); // engine vibration ~0.45 g at 47 Hz
+  // GPS: speed invalid (null) while stopped (iOS), positions identical; lagging after the launch
+  const gps = (t) => (t < tLaunch + 1 ? [null, 21.0894, -101.6987] : [Math.min(a * G0 * (t - tLaunch - 1), a * G0 * 5) * 3.6, 21.0894, -101.6987]);
+  run(an, 0, 14, (t) => ({ ...REST, long: noise(t) + (t >= tLaunch && t < 9 ? a : 0) }), gps);
+  an.flush();
+  assert.equal(an.attempts.length, 1);
+  close(an.attempts[0].t, tLaunch, 0.05);
+  close(an.attempts[0].t100, Math.sqrt((2 * 30.48) / (a * G0)), 0.1);
+});

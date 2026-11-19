@@ -1,0 +1,2 @@
+version,device name,recording epoch time,recording time,recording timezone,platform,appVersion,device id,sensors,sampleRateMs,standardisation,platform version
+3,iPhone 15,1794875013340,2026-11-17_00-23-33,America/Mexico_City,ios,1.68.1,02a84114-8fa4-453e-8cf3-3abc28748936,Accelerometer|Gravity|Gyroscope|Orientation|Barometer|Location|Battery|Annotation|GyroscopeUncalibrated|AccelerometerUncalibrated,10|10|10|10|0|0|1000||10|10,false,27.0.1

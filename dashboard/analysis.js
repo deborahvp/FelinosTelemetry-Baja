@@ -14,7 +14,7 @@ export const DEFAULTS = {
   },
   acceleration: {
     restSpeedKmh: 1.0, restMinS: 1.0, launchG: 0.1, launchMinS: 0.1,
-    distancesM: [30.48, 45.72], timeoutS: 60.0, gpsBlend: 0.5,
+    distancesM: [30.48, 45.72], timeoutS: 60.0, gpsBlend: 0.0,
   },
   turning: { windowS: 2.0, minYawDegS: 10.0, maxYawCv: 0.15, speedKmh: [3.0, 15.0], maxSpeedCv: 0.15 },
   durability: { targetHours: 80.0 },
@@ -58,8 +58,9 @@ export class LiveAnalyzer {
     this.lastImuT = null;
     // launches (VG-04 / VG-06)
     this.restStart = null;
-    this.restBias = { sum: 0, n: 0 };
+    this.restBuf = []; // [t, a_long] while stopped
     this.exceedStart = null;
+    this.exceedBuf = []; // [dt, a_long] since the threshold was crossed
     this.launch = null;
     this.attempts = [];
     // turns (VG-05)
@@ -71,9 +72,17 @@ export class LiveAnalyzer {
   }
 
   /** GPS fix: t (s), speed (km/h or null), lat, lon. */
-  gps(t, speedKmh, lat, lon) {
+  gps(t, rawSpeedKmh, lat, lon) {
     const { activeSpeedKmh, maxGapS } = this.cfg.usage;
     const prev = this.lastGps;
+    // iPhones report an invalid speed (-1 → null) when stopped. Estimate it from the position:
+    // below the rest threshold it is a standstill; above it, it is often a GPS jump, so unknown.
+    let speedKmh = rawSpeedKmh;
+    if (speedKmh === null && prev && t - prev.t > 0 && t - prev.t <= maxGapS) {
+      const est = (haversine(prev.lat, prev.lon, lat, lon) / (t - prev.t)) * 3.6;
+      speedKmh = est < this.cfg.acceleration.restSpeedKmh ? 0 : null;
+    }
+    if (speedKmh !== null) this.lastValidGpsT = t;
     if (prev && speedKmh !== null) {
       const dt = t - prev.t;
       if (dt > 0 && dt <= maxGapS && speedKmh >= activeSpeedKmh) {
@@ -121,7 +130,7 @@ export class LiveAnalyzer {
     const u = this.cfg.usage;
     const w = dt > 0 ? dt / (u.imuWindowS + dt) : 1;
     this.accMs += w * (s.long ** 2 + s.lat ** 2 + s.vert ** 2 - this.accMs);
-    const gpsCovered = this.lastGps !== null && t - this.lastGps.t <= u.maxGapS;
+    const gpsCovered = this.lastValidGpsT !== undefined && t - this.lastValidGpsT <= u.maxGapS;
     if (!gpsCovered && dt > 0 && Math.sqrt(this.accMs) > u.imuActivityG) this.activeImuS += dt;
   }
 
@@ -194,11 +203,12 @@ export class LiveAnalyzer {
       return;
     }
     const speed = this.speedNow(t);
-    const atRest = speed !== null && speed < c.restSpeedKmh;
-    if (atRest) {
-      if (this.restStart === null) { this.restStart = t; this.restBias = { sum: 0, n: 0 }; }
-      this.restBias.sum += s.long; // a_long at rest = bias to remove (mounting/level error)
-      this.restBias.n += 1;
+    // Until the GPS has given a valid speed, assume the recording started parked.
+    const atRest = (speed !== null && speed < c.restSpeedKmh) || this.lastValidGpsT === undefined;
+    if (atRest) { // every rest sample; those near a launch are excluded in startLaunch()
+      if (this.restStart === null) { this.restStart = t; this.restBuf = []; }
+      this.restBuf.push([t, s.long]);
+      if (this.restBuf.length > 3000) this.restBuf.shift();
     } else if (this.restStart !== null) {
       // GPS lags ~1 s, so stay armed right after the stop; disarm on a short stop or when
       // clearly moving without a detected launch (rolling start).
@@ -206,29 +216,46 @@ export class LiveAnalyzer {
       const rolling = speed !== null && speed > c.restSpeedKmh + 5;
       if (shortStop || rolling) this.restStart = null;
     }
-    const armed = this.restStart !== null && t - this.restStart >= c.restMinS && this.restBias.n > 0;
+    const armed = this.restStart !== null && t - this.restStart >= c.restMinS && this.restBuf.length > 0;
     if (!armed) { this.exceedStart = null; return; }
-    const bias = this.restBias.sum / this.restBias.n;
-    if (s.long - bias > c.launchG) {
-      if (this.exceedStart === null) {
-        this.exceedStart = t;
-        this.pre = { v: 0, d: 0 }; // integrate during confirmation so no motion is lost
-      } else {
-        this.pre.v += (s.long - bias) * G0 * dt;
-        this.pre.d += this.pre.v * dt;
-      }
-      if (t - this.exceedStart >= c.launchMinS) {
-        this.launch = {
-          t0: this.exceedStart, bias, v: this.pre.v, d: this.pre.d, grades: [],
-          times: c.distancesM.map(() => null), gpsTimes: c.distancesM.map(() => null),
-          gpsD: 0, gpsLast: { t: this.exceedStart, v: 0 }, maxSpeedKmh: 0,
-        };
-        this.restStart = null;
-        this.exceedStart = null;
-      }
+    const bias = this.restBuf.reduce((acc, [, x]) => acc + x, 0) / this.restBuf.length;
+    // Engine vibration at rest reaches ~0.5 g raw, so a launch is confirmed on the 0.1 s smoothed
+    // signal; its start is the first raw sample above the threshold, so no time is lost.
+    const rawAbove = s.long - bias > c.launchG;
+    const smoothAbove = this.longS - bias > c.launchG;
+    if (rawAbove || smoothAbove) {
+      if (this.exceedStart === null) { this.exceedStart = t; this.exceedBuf = []; }
+      this.exceedBuf.push([dt, s.long]);
+      if (smoothAbove && t - this.exceedStart >= c.launchMinS) this.startLaunch();
     } else {
       this.exceedStart = null;
     }
+  }
+
+  /**
+   * Confirm a launch: bias from the rest samples before it, re-integrate since its start. The GPS
+   * lags about a second, so it still reads "stopped" during the first part of the launch; those
+   * samples must not leak into the at-rest bias.
+   */
+  startLaunch() {
+    const c = this.cfg.acceleration;
+    const t0 = this.exceedStart;
+    let clean = this.restBuf.filter(([t]) => t < t0 - 0.2);
+    if (!clean.length) clean = this.restBuf.filter(([t]) => t < t0);
+    const bias = clean.length ? clean.reduce((acc, [, x]) => acc + x, 0) / clean.length : 0;
+    let v = 0;
+    let d = 0;
+    for (const [dt, x] of this.exceedBuf.slice(1)) {
+      v = Math.max(0, v + (x - bias) * G0 * dt);
+      d += v * dt;
+    }
+    this.launch = {
+      t0, bias, v, d, grades: [],
+      times: c.distancesM.map(() => null), gpsTimes: c.distancesM.map(() => null),
+      gpsD: 0, gpsLast: { t: t0, v: 0 }, maxSpeedKmh: 0,
+    };
+    this.restStart = null;
+    this.exceedStart = null;
   }
 
   launchGps(t, speedKmh) {

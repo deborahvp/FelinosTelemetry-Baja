@@ -27,7 +27,7 @@ acceleration:                 # VG-04 (100 ft) and VG-06 (150 ft) launches
   launch_min_s: 0.1           # ...sustained at least this long
   distances_m: [30.48, 45.72] # 100 ft, 150 ft
   timeout_s: 60.0
-  gps_blend: 0.5              # complementary filter weight of GPS speed at each fix
+  gps_blend: 0.0              # weight of GPS speed at each fix; 0 = pure IMU (iPhone GPS speed lags ~1-2 s)
 
 turning:                      # VG-05 steady-state turns
   window_s: 2.0
