@@ -116,7 +116,8 @@ export class TrackMap {
     }
     this.halo.setLatLng(cur).bringToFront();
     this.cursor.setLatLng(cur).bringToFront();
-    if (first && !this.hasImage) this.map.setView(cur, Math.max(this.map.getZoom(), 17));
+    // First fix: center on the data unless it is already on screen (e.g. on the track image).
+    if (first && (!this.hasImage || !this.map.getBounds().contains(cur))) this.map.setView(cur, Math.max(this.map.getZoom(), 17));
     else if (!this.map.getBounds().pad(-0.1).contains(cur)) this.map.panTo(cur);
   }
 

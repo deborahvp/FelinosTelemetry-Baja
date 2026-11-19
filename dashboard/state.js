@@ -242,6 +242,12 @@ export class Store {
     this.session = null;
     this.listeners = new Set();
   }
+  /** Forget the current session (Replay: start over or load another recording). */
+  reset() {
+    this.session = null;
+    this.previous = null;
+  }
+
   /** Change the mounting live (Mount dialog). Throws on an invalid map. */
   setAxisMap(axisMap) {
     parseAxisMap(axisMap);
@@ -262,12 +268,14 @@ export class Store {
         this.previous = this.session;
       }
       const device = message.deviceId ? String(message.deviceId) : null;
-      this.session = new Session(id, { axisMap: this.axisMap, savedLevel: device ? this.loadLevel(device) : null });
+      // Replay levels from its own data: never reuse (or overwrite) the live level reference.
+      const saved = device && this.useSavedLevel !== false ? this.loadLevel(device) : null;
+      this.session = new Session(id, { axisMap: this.axisMap, savedLevel: saved });
       changed = true;
     }
     const s = this.session;
     s.ingest(message, receivedMs);
-    if (s.levelFixed && s.deviceId) {
+    if (s.levelFixed && s.deviceId && this.useSavedLevel !== false) {
       this.saveLevel(s.deviceId, s.levelFixed);
       s.levelFixed = null;
     }

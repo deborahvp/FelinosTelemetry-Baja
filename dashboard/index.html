@@ -16,8 +16,8 @@
 <header class="topbar">
   <div class="logo"><div class="logo-mark">F</div><div>FELINOS RACING<small data-i18n="brandSub">TELEMETRY · BAJA SAE</small></div></div>
   <div class="seg" role="tablist">
-    <button class="on" role="tab" aria-selected="true" data-i18n="live">Live</button>
-    <button role="tab" aria-selected="false" disabled data-i18n="replay" data-i18n-title="replaySoon">Replay</button>
+    <button class="on" role="tab" aria-selected="true" id="tabLive" data-i18n="live">Live</button>
+    <button role="tab" aria-selected="false" id="tabReplay" data-i18n="replay">Replay</button>
   </div>
   <div class="spacer"></div>
   <button class="meta" id="runMeta" data-i18n-title="editRun">
@@ -32,6 +32,24 @@
 </header>
 
 <div class="banner" id="banner" hidden></div>
+
+<section class="replay-bar card" id="replayBar" hidden>
+  <div class="rp-row">
+    <label class="small-btn file-btn"><input type="file" id="replayFolder" webkitdirectory multiple><span data-i18n="replayOpenFolder">Open folder…</span></label>
+    <label class="small-btn file-btn"><input type="file" id="replayFiles" accept=".ndjson" multiple><span data-i18n="replayOpenFiles">Open .ndjson…</span></label>
+    <select id="replayRun" aria-label="Recording" disabled></select>
+    <span class="rp-status" id="replayStatus" data-i18n="replayHint">Open the folder of a test day (one subfolder per Sensor Logger export) or .ndjson backups. Nothing is uploaded.</span>
+  </div>
+  <div class="rp-row rp-controls" id="replayControls" hidden>
+    <button class="rp-play" id="replayPlay" data-i18n-title="replayPlayPause" aria-label="Play">▶</button>
+    <div class="seg rp-speed" id="replaySpeeds">
+      <button data-speed="1" class="on">1×</button><button data-speed="2">2×</button><button data-speed="5">5×</button><button data-speed="10">10×</button>
+    </div>
+    <input type="range" id="replaySeek" min="0" max="1000" step="1" value="0" aria-label="Position">
+    <span class="num rp-time" id="replayTime">00:00 / 00:00</span>
+  </div>
+  <div class="rp-summary" id="replaySummary" hidden></div>
+</section>
 
 <main>
   <section class="kpis">

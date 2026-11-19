@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (dashboard)
 
+- **Replay mode** (Live | Replay tabs): open a test-day folder (one subfolder per Sensor Logger
+  CSV export) or `.ndjson` backups in the browser (nothing is uploaded), pick a recording and play
+  it through the live pipeline with play/pause (space bar), 1×/2×/5×/10× and seek. Whole-run
+  summary (duration, max speed, 100/150 ft, max braking as a 0.5 s average, events, active time);
+  the goals panel shows the recording as of the playhead; Sensor Logger tags set the test type;
+  changing the mount rebuilds the replay; nothing is written to the run log or the saved level.
+
 - Floating **stopwatch** (button or space bar): manual start/stop saved to the run being recorded,
   shown next to the automatic 100 ft / 150 ft times the vehicle measured meanwhile; several times
   per run; listed in the run log, CSV and meta.yaml notes.

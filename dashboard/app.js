@@ -5,10 +5,10 @@ import { GGDiagram } from './gg.js';
 import { pickLanguage, translate } from './i18n.js';
 import { TrackMap } from './map.js';
 import { connectLive, isBrokerUrl, resolveConnection } from './mqtt.js';
-import { parseNdjson, play } from './replay.js';
+import { ReplayController, groupRecordings, parseNdjson, play, recordingFromCsvFiles, recordingFromNdjson } from './replay.js';
 import { REQUIREMENTS, runValue, summarizeGoals } from './goals.js';
 import { RunLog, bestManual, folderName, localDate, toCsv, toMetaYaml } from './runlog.js';
-import { Store } from './state.js';
+import { Session, Store } from './state.js';
 import { Stopwatch, autoTimes, formatStopwatch } from './timer.js';
 import { matchPreset, parseAxisMap, presetAxisMap } from './vehicle.js';
 
@@ -77,7 +77,9 @@ const demoUrl = params.get('demo');
 const demoSpeed = demoUrl ? Number(params.get('speed')) || 1 : 1; // latency is meaningless when sped up
 // Browser-saved connection (Connection dialog) wins over config.js, so a hosted copy needs no secrets.
 const connection = resolveConnection(store_.get('felinos.conn'), found ? cfg.mqtt : null);
-let conn = demoUrl ? 'demo' : connection.source !== 'none' ? 'connecting' : 'noConfig';
+// Replay mode (?replay=1): recorded data opened in the browser; no live connection, no run log writes.
+const replayMode = params.has('replay') && !demoUrl;
+let conn = replayMode ? 'replay' : demoUrl ? 'demo' : connection.source !== 'none' ? 'connecting' : 'noConfig';
 let dirty = true;
 
 // Mounting chosen in the Mount dialog (this browser) wins over config.js.
@@ -97,6 +99,12 @@ const runLog = new RunLog({ load: () => store_.get('felinos.runs', []), save: (e
 let runLogDirty = true;
 
 store.onChange((session, isNew) => {
+  if (replayMode) { // recorded data: do not create live runs in the log
+    if (isNew) map.reset();
+    dirty = true;
+    runLogDirty = true;
+    return;
+  }
   if (isNew) {
     map.reset();
     const prev = store.previous;
@@ -170,7 +178,7 @@ function renderData() {
     $('mapCoords').textContent = `${Math.abs(lat).toFixed(4)}° ${t(lat >= 0 ? 'dirN' : 'dirS')}, ${Math.abs(lon).toFixed(4)}° ${t(lon >= 0 ? 'dirE' : 'dirW')}`;
   }
 
-  runLog.updateStats(s.id, {
+  if (!replayMode) runLog.updateStats(s.id, {
     lastSampleAt: s.tLast * 1000, maxSpeed: s.max.speed, maxAlong: s.max.along, maxAlat: s.max.alat,
     deviceId: s.deviceId, analysis: s.analysis.snapshot(),
   });
@@ -186,7 +194,12 @@ function runResult(e) {
 }
 
 function renderGoals() {
-  const g = summarizeGoals(runLog.entries, { today: localDate(Date.now()), trackWidthM: cfg.trackWidthM });
+  // Replay: the goals panel shows the recording being played (results as of the playhead).
+  const entries = replayMode
+    ? (replay.rec && store.session ? [{ test: replay.rec.test, startedAt: replay.rec.startedAt, analysis: store.session.analysis.snapshot() }] : [])
+    : runLog.entries;
+  const today = replayMode && replay.rec ? localDate(replay.rec.startedAt) : localDate(Date.now());
+  const g = summarizeGoals(entries, { today, trackWidthM: cfg.trackWidthM });
   const ids = { 'VG-04': '04', 'VG-05': '05', 'VG-06': '06' };
   for (const r of g.requirements) {
     const id = ids[r.id];
@@ -314,6 +327,7 @@ function renderStatus() {
     auth: ['bad', t('offline')],
     noConfig: ['bad', t('noConfig')],
     demo: ['', t('demo')],
+    replay: ['', t('replay')],
   }[conn];
   let cls = pillState[0];
   if ((conn === 'connected' || conn === 'demo') && age !== null && age > 5) cls = 'warn';
@@ -331,12 +345,21 @@ function renderStatus() {
   }
 
   // run meta
-  $('mRun').textContent = run.run;
-  $('mTest').textContent = t(`t_${run.test}`);
-  $('mConfig').textContent = [run.suspension, run.cvt].filter(Boolean).join(' · ') || '—';
-  const day = s?.t0 ? new Date(s.t0 * 1000) : new Date();
-  const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-  $('mSession').textContent = [date, run.place, s ? s.id.slice(0, 8) : null].filter(Boolean).join(' · ');
+  if (replayMode) {
+    const r = replay.rec;
+    $('mRun').textContent = r ? r.name : '—';
+    $('mTest').textContent = r ? t(`t_${r.test}`) : t('replay');
+    $('mConfig').textContent = r?.tag || '—';
+    $('mSession').textContent = r ? [localDate(r.startedAt), r.platform, r.deviceId?.slice(0, 8)].filter(Boolean).join(' · ') : '—';
+  }
+  if (!replayMode) $('mRun').textContent = run.run;
+  if (!replayMode) {
+    $('mTest').textContent = t(`t_${run.test}`);
+    $('mConfig').textContent = [run.suspension, run.cvt].filter(Boolean).join(' · ') || '—';
+    const day = s?.t0 ? new Date(s.t0 * 1000) : new Date();
+    const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    $('mSession').textContent = [date, run.place, s ? s.id.slice(0, 8) : null].filter(Boolean).join(' · ');
+  }
 
   if (!s) {
     $('kRec').textContent = t('waiting');
@@ -345,12 +368,13 @@ function renderStatus() {
     $('kBatHint').textContent = '—';
     return;
   }
-  $('kAge').textContent = fmtNum(age, 1);
+  $('kAge').textContent = replayMode ? '—' : fmtNum(age, 1); // no live link in Replay
   $('kTime').textContent = clock(s.duration);
-  $('kRec').textContent = age !== null && age < 5 ? t('recording') : t('stale');
-  const latencyValid = s.latencyS !== null && Number.isFinite(s.latencyS) && demoSpeed === 1;
+  $('kRec').textContent = replayMode ? t('replay') : age !== null && age < 5 ? t('recording') : t('stale');
+  const latencyValid = s.latencyS !== null && Number.isFinite(s.latencyS) && demoSpeed === 1 && !replayMode;
   $('kLatency').textContent = latencyValid ? t('latency', { s: s.latencyS.toFixed(1) }) : '';
-  if (s.missing === 0) setStatus($('kGaps'), age !== null && age > 5 ? 'warn' : 'good', age !== null && age > 5 ? t('stale') : t('noGaps'));
+  if (replayMode) setStatus($('kGaps'), '', t('replay'));
+  else if (s.missing === 0) setStatus($('kGaps'), age !== null && age > 5 ? 'warn' : 'good', age !== null && age > 5 ? t('stale') : t('noGaps'));
   else setStatus($('kGaps'), 'warn', t('missingMsgs', { n: s.missing }));
 
   const acc = s.now.acc;
@@ -429,6 +453,7 @@ mountDialog.addEventListener('close', () => {
   axisMap = next;
   store_.set('felinos.axisMap', next);
   store.setAxisMap(next); // re-levels the current session over the next 2 s
+  if (replayMode && replay.ctl) { rebuildReplay(); return; }
   if (store.session) showLeveling();
   dirty = true;
 });
@@ -548,6 +573,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code !== 'Space' || e.repeat) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('dialog[open]')) return;
   e.preventDefault(); // also stops a focused button from being "clicked" by the space bar
+  if (replayMode && replay.ctl) { replay.ctl.toggle(Date.now()); renderReplay(); return; }
   if ($('swPanel').hidden) setSwOpen(true);
   swToggle();
 });
@@ -624,8 +650,177 @@ $('clearLog').onclick = () => {
   runLogDirty = true;
 };
 
+// ---- Live / Replay tabs ----------------------------------------------------------------
+function switchMode(toReplay) {
+  const q = new URLSearchParams(location.search);
+  if (toReplay) q.set('replay', '1');
+  else q.delete('replay');
+  location.search = q.toString(); // reload: cleanly drops (or opens) the live connection
+}
+$('tabLive').onclick = () => { if (replayMode) switchMode(false); };
+$('tabReplay').onclick = () => { if (!replayMode) switchMode(true); };
+$('tabLive').classList.toggle('on', !replayMode);
+$('tabReplay').classList.toggle('on', replayMode);
+$('tabLive').setAttribute('aria-selected', String(!replayMode));
+$('tabReplay').setAttribute('aria-selected', String(replayMode));
+
+// ---- Replay: recordings opened from disk, played through the live pipeline -----------------
+const replay = { groups: [], rec: null, ctl: null, summary: null };
+store.useSavedLevel = !replayMode;
+$('replayBar').hidden = !replayMode;
+
+function clearPanels() {
+  map.reset();
+  charts.speed.setData([[], []], 0);
+  charts.accel.setData([[], [], []], 0);
+  charts.yaw.setData([[], [], []], 0);
+  gg.update({ along: [], alat: [] });
+}
+
+/** Whole-recording result, computed once when it loads (independent of the playhead). */
+function summarize(rec) {
+  const s = new Session(rec.id, { axisMap });
+  for (let i = 0, id = 1; i < rec.entries.length; id += 1) {
+    const end = rec.entries[i].time + 1e9;
+    const batch = [];
+    while (i < rec.entries.length && rec.entries[i].time <= end) batch.push(rec.entries[i++]);
+    s.ingest({ messageId: id, sessionId: rec.id, payload: batch }, 0);
+  }
+  s.analysis.flush();
+  const best = (k) => {
+    const xs = s.analysis.attempts.map((a) => a[k]).filter(Number.isFinite);
+    return xs.length ? Math.min(...xs) : null;
+  };
+  // Hardest braking as a 0.5 s average (12 plot samples at 25 Hz): instantaneous peaks are
+  // inflated by engine vibration (~1 g raw vs ~0.5 g sustained on the 2026-11-16 braking run).
+  let minAlong = 0;
+  const a = s.imu.along;
+  for (let i = 0, sum = 0; i < a.length; i += 1) {
+    sum += a[i] - (i >= 12 ? a[i - 12] : 0);
+    if (i >= 11 && sum / 12 < minAlong) minAlong = sum / 12;
+  }
+  return {
+    duration: rec.t1 - rec.t0,
+    maxSpeed: s.max.speed,
+    t100: best('t100'),
+    t150: best('t150'),
+    maxBrake: s.imu.along.length ? -minAlong : null,
+    counts: s.analysis.counts,
+    activeS: s.analysis.activeS,
+  };
+}
+
+function renderSummary() {
+  const box = $('replaySummary');
+  const m = replay.summary;
+  box.hidden = !m;
+  if (!m) return;
+  const chip = (label, value) => {
+    const el = document.createElement('span');
+    el.append(`${label} `, Object.assign(document.createElement('b'), { textContent: value }));
+    return el;
+  };
+  box.replaceChildren(
+    chip(t('sumDuration'), clock(m.duration)),
+    chip(t('sumMaxSpeed'), `${fmtNum(m.maxSpeed, 1)} km/h`),
+    chip(t('sum100'), m.t100 === null ? '—' : `${fmtNum(m.t100, 2)} s`),
+    ...(m.t150 !== null ? [chip(t('sum150'), `${fmtNum(m.t150, 2)} s`)] : []),
+    chip(t('sumMaxBrake'), m.maxBrake === null ? '—' : `${fmtNum(m.maxBrake, 2)} g`),
+    chip(t('impacts'), String(m.counts.impact)),
+    chip(t('jumps'), String(m.counts.jump)),
+    chip(t('hardBrakes'), String(m.counts.hardBrake)),
+    chip(t('sumActive'), clock(m.activeS)),
+  );
+  box.title = t('replayMountHint');
+}
+
+function renderReplay() {
+  const c = replay.ctl;
+  $('replayControls').hidden = !c;
+  if (!c) return;
+  $('replayPlay').textContent = c.playing ? '❚❚' : '▶';
+  if (document.activeElement !== $('replaySeek')) $('replaySeek').value = String(Math.round((c.duration ? c.elapsed / c.duration : 0) * 1000));
+  $('replayTime').textContent = `${clock(c.elapsed)} / ${clock(c.duration)}`;
+  document.querySelectorAll('#replaySpeeds button').forEach((b) => b.classList.toggle('on', Number(b.dataset.speed) === c.speed));
+}
+
+/** Mount changed: replay from the start to the same point with the new axes. */
+function rebuildReplay() {
+  const c = replay.ctl;
+  const at = c.t;
+  store.setAxisMap(axisMap);
+  c.restart();
+  c.seek(at);
+  replay.summary = summarize(replay.rec);
+  renderSummary();
+  dirty = true;
+}
+
+async function loadRecording(index) {
+  const g = replay.groups[index];
+  if (!g) return;
+  replay.ctl?.pause();
+  $('replayStatus').textContent = t('replayLoading', { name: g.name });
+  const files = await Promise.all(g.files.map(async (f) => ({ name: f.file.name, text: await f.file.text() })));
+  replay.rec = g.kind === 'ndjson' ? recordingFromNdjson(files[0].text, g.name) : recordingFromCsvFiles(files, g.name);
+  replay.summary = summarize(replay.rec);
+  replay.ctl = new ReplayController(replay.rec, {
+    onReset: () => { store.reset(); clearPanels(); },
+    onFeed: (batch, id) => store.handle({ messageId: id, sessionId: replay.rec.id, deviceId: replay.rec.deviceId, payload: batch }, Date.now()),
+  });
+  replay.ctl.seekFraction(0);
+  $('replayStatus').textContent = t('replayFound', { n: replay.groups.length });
+  renderSummary();
+  renderReplay();
+  renderStatus();
+  dirty = true;
+  runLogDirty = true;
+}
+
+function useFiles(fileList) {
+  const files = [...fileList].map((file) => ({ path: file.webkitRelativePath || file.name, file }));
+  replay.groups = groupRecordings(files);
+  const sel = $('replayRun');
+  sel.replaceChildren(...replay.groups.map((g, i) => Object.assign(document.createElement('option'), { value: String(i), textContent: g.name })));
+  sel.disabled = !replay.groups.length;
+  if (!replay.groups.length) {
+    $('replayStatus').textContent = t('replayNone');
+    return;
+  }
+  loadRecording(0);
+}
+
+$('replayFolder').onchange = (e) => useFiles(e.target.files);
+$('replayFiles').onchange = (e) => useFiles(e.target.files);
+$('replayRun').onchange = (e) => loadRecording(Number(e.target.value));
+$('replayPlay').onclick = () => { replay.ctl?.toggle(Date.now()); renderReplay(); };
+document.querySelectorAll('#replaySpeeds button').forEach((b) => {
+  b.onclick = () => {
+    if (!replay.ctl) return;
+    replay.ctl.speed = Number(b.dataset.speed);
+    renderReplay();
+  };
+});
+$('replaySeek').oninput = (e) => {
+  if (!replay.ctl) return;
+  replay.ctl.seekFraction(Number(e.target.value) / 1000);
+  renderReplay();
+  dirty = true;
+};
+if (replayMode) {
+  setInterval(() => {
+    const c = replay.ctl;
+    if (!c?.playing) return;
+    c.tick(Date.now());
+    renderReplay();
+    dirty = true;
+  }, 50);
+}
+
 // ---- data source ----------------------------------------------------------------------
-if (demoUrl) {
+if (replayMode) {
+  // recorded data only: nothing to connect to
+} else if (demoUrl) {
   const res = await fetch(demoUrl);
   const records = parseNdjson(await res.text());
   play(records, (m) => store.handle(m), { speed: demoSpeed });

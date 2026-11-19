@@ -100,7 +100,16 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 - [ ] Anotar consumo de datos del chip y batería usada por hora.
 - [ ] Anotar pendientes de la sección 4 de `sensorlogger-setup.es.md`.
 
-## 7. Mapa
+## 7. Ver de nuevo una prueba (Repetición)
+
+1. En el dashboard, botón **Repetición** (arriba, junto a "En vivo").
+2. **Abrir carpeta…** → elegir la carpeta del día de pruebas (una subcarpeta por export de Sensor Logger, p. ej. `resultadosPruebas171126`). También sirven respaldos `.ndjson` con **Abrir .ndjson…**. No se sube nada: todo se lee en tu navegador.
+3. Elegir la corrida en la lista → aparece el **resumen** (duración, velocidad máxima, tiempo a 100 ft / 150 ft, frenada máxima, eventos, tiempo activo).
+4. **▶** (o barra espaciadora) para reproducir, velocidades **1× 2× 5× 10×** y la barra para saltar a cualquier momento. Gráficas, mapa, G-G, indicadores y el panel de objetivos muestran la corrida como ocurrió.
+5. **Montaje** debe coincidir con cómo iba el teléfono (el 16 de noviembre: *Vertical, pantalla hacia el frente*); si se cambia, la repetición se recalcula sola.
+6. **En vivo** regresa al modo normal. La repetición no agrega nada a la bitácora.
+
+## 8. Mapa
 
 - **Con internet:** el mapa muestra imagen satelital de la zona (Esri) y encima la traza GPS. No hay que hacer nada.
 - **Sin internet (respaldo):** una captura satelital propia en `dashboard/assets/`:
@@ -110,7 +119,7 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
   4. Copiar `assets/track.example.json` → `assets/track.json` y poner esas dos esquinas en `bounds` (`[[sur, oeste], [norte, este]]`).
   - La captura no se sube a GitHub (está en `.gitignore`) porque la imagen tiene derechos de Google.
 
-## 8. Problemas comunes
+## 9. Problemas comunes
 
 | Síntoma | Causa probable | Qué hacer |
 | --- | --- | --- |
@@ -121,5 +130,5 @@ Pruebas sugeridas para esta primera salida (también sirven para calibrar umbral
 | "N perdidos" en Último mensaje | Mala cobertura | No pasa nada: la grabación local tiene todo |
 | Pendiente marca ≠ 0 en plano | Nivel tomado en movimiento | Detener en plano → **Nivelar** |
 | a longitudinal al revés | Signo de `axisMap` | Ver sección 2 |
-| Mapa sin imagen | Sin internet y sin `assets/track.json` | La traza se ve igual; para tener fondo sin internet, ver sección 7 |
+| Mapa sin imagen | Sin internet y sin `assets/track.json` | La traza se ve igual; para tener fondo sin internet, ver sección 8 |
 | `felinos ingest`: `MQTT_HOST is not set` | Falta `.env` | Copiar `.env.example` → `.env` |

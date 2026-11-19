@@ -106,7 +106,7 @@ Conventions: Conventional Commits, SemVer tags, [Keep a Changelog](CHANGELOG.md)
 ## Roadmap
 
 - **v0.1.0** — repo skeleton, run metadata models, Sensor Logger parser (stream + CSV), MQTT → NDJSON ingest, live dashboard, field guides.
-- **v0.2.0** *(in progress)* — ✅ data quality, axis alignment, usage, events, VG-04/05/06, rainflow and equivalent hours, per-run reports, live goals panel · ⏳ resampling, Kasa circle-fit cross-check, figures, DVP&R table, dashboard Replay, PSD export for random vibration.
+- **v0.2.0** *(in progress)* — ✅ data quality, axis alignment, usage, events, VG-04/05/06, rainflow and equivalent hours, per-run reports, live goals panel · ✅ dashboard Replay · ⏳ resampling, Kasa circle-fit cross-check, figures, DVP&R table, PSD export for random vibration.
 - **v0.3.0+** — PostgreSQL sink and run importer, team web platform, telemetry PCB integration (LoRa → MQTT).
 
 ## Engineering decisions
